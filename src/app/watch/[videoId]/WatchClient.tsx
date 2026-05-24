@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import ReactPlayer from "react-player";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 import { getAddress } from "viem";
@@ -55,6 +55,13 @@ export function WatchClient({ video }: WatchClientProps) {
 
   // Billing is active only if not owner, free tier expired, and allowance approved
   const billingEnabled = !isOwner && isBilled && hasAllowance;
+
+  useEffect(() => {
+    if (userAddress && allowance !== undefined && allowance > BigInt(0) && depositOpen) {
+      setDepositOpen(false);
+      setIsPlaying(true);
+    }
+  }, [userAddress, allowance, depositOpen]);
 
   const { unsignedVoucher, resignLoading, handleResign, dismissUnsigned } = useWatchSession({
     creatorAddress,
@@ -140,7 +147,7 @@ export function WatchClient({ video }: WatchClientProps) {
           </div>
         )}
         <ReactionBar />
-        <MatchTakes videoId={video.id} authorId={video.owner_profile_id} />
+        <MatchTakes videoId={video.id} />
       </section>
       <aside className="space-y-4">
         <SessionPanel

@@ -3,16 +3,19 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { useAccount } from "wagmi";
+import { useUserProfile } from "@/hooks/useUserProfile";
 
 const TAGS = ["Tactical", "Banter", "Hot Take", "Disagree"] as const;
 type TakeTag = typeof TAGS[number];
 
 interface MatchTakesProps {
   videoId: string;
-  authorId: string;
 }
 
-export function MatchTakes({ videoId, authorId }: MatchTakesProps) {
+export function MatchTakes({ videoId }: MatchTakesProps) {
+  const { isConnected } = useAccount();
+  const { data: viewerProfile } = useUserProfile();
   const [body,    setBody]    = useState("");
   const [tag,     setTag]     = useState<TakeTag>("Banter");
   const [loading, setLoading] = useState(false);
@@ -53,7 +56,7 @@ export function MatchTakes({ videoId, authorId }: MatchTakesProps) {
     }
     const { error: dbError } = await supabase
       .from("match_takes")
-      .insert({ video_id: videoId, author_id: authorId, body: body.trim(), tag });
+      .insert({ video_id: videoId, author_id: viewerProfile?.id, body: body.trim(), tag });
 
     setLoading(false);
     if (dbError) {
@@ -90,19 +93,25 @@ export function MatchTakes({ videoId, authorId }: MatchTakesProps) {
         onChange={(e) => setBody(e.target.value)}
         maxLength={500}
         rows={3}
-        placeholder="Drop your match take..."
-        className="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] p-3 text-sm text-chalk placeholder-white/30 resize-none focus:outline-none focus:ring-1 focus:ring-[var(--country-accent)]"
+        placeholder={isConnected ? "Drop your match take..." : "Connect wallet to post a match take..."}
+        disabled={!isConnected}
+        className="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] p-3 text-sm text-chalk placeholder-white/30 resize-none focus:outline-none focus:ring-1 focus:ring-[var(--country-accent)] disabled:opacity-50"
       />
 
       {error && <p className="text-red-400 text-xs">{error}</p>}
 
-      <button
-        onClick={submitTake}
-        disabled={loading || !body.trim()}
-        className="px-4 py-2 rounded-xl bg-[var(--country-accent)] text-black text-sm font-semibold disabled:opacity-40 transition-opacity"
-      >
-        {loading ? "Posting..." : "Post Take"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={submitTake}
+          disabled={loading || !body.trim() || !isConnected}
+          className="px-4 py-2 rounded-xl bg-[var(--country-accent)] text-black text-sm font-semibold disabled:opacity-40 transition-opacity"
+        >
+          {loading ? "Posting..." : "Post Take"}
+        </button>
+        {!isConnected && (
+          <span className="text-xs text-white/40">Connect wallet to join</span>
+        )}
+      </div>
 
       {/* Render takes list */}
       <div className="mt-4 space-y-3 pt-3 border-t border-white/5">

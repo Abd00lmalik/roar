@@ -5,9 +5,28 @@ import { EarningsOverview } from "@/components/earnings/EarningsOverview";
 import { WithdrawButton } from "@/components/earnings/WithdrawButton";
 import { TopEarningVideos } from "@/components/earnings/TopEarningVideos";
 import Link from "next/link";
+import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export default function EarningsPage() {
+  const { isConnected } = useAccount();
   const { data: profile, isLoading } = useUserProfile();
+
+  if (!isConnected) {
+    return (
+      <div className="mx-auto w-full max-w-md px-4 py-12 text-center space-y-4">
+        <h1 className="font-display text-3xl font-bold">Goal Earnings 💳</h1>
+        <div className="glass-panel p-6 space-y-4 bg-stadium/80">
+          <p className="text-sm text-chalk/70">
+            Connect your wallet to view your creator earnings and claim your balance.
+          </p>
+          <div className="flex justify-center">
+            <ConnectButton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const totalEarned = profile ? Number(profile.total_earned || 0) : 0;
 

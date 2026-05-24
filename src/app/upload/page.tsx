@@ -3,14 +3,33 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { FootballButton } from "@/components/shared/FootballButton";
+import { useAccount } from "wagmi";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 export default function UploadPage() {
+  const { isConnected } = useAccount();
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("Match Previews");
   const [loading, setLoading] = useState(false);
+
+  if (!isConnected) {
+    return (
+      <div className="mx-auto w-full max-w-md px-4 py-12 text-center space-y-4">
+        <h1 className="font-display text-3xl font-bold">Enter the Pitch ⚽</h1>
+        <div className="glass-panel p-6 space-y-4 bg-stadium/80">
+          <p className="text-sm text-chalk/70">
+            Connect your wallet to start uploading videos and earning from your content.
+          </p>
+          <div className="flex justify-center">
+            <ConnectButton />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmit = async () => {
     if (!title.trim() || !file) return;
