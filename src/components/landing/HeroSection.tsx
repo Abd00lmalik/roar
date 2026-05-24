@@ -14,7 +14,7 @@ export function HeroSection() {
         Where football attention becomes creator revenue.
       </p>
       <p className="max-w-3xl text-sm text-chalk/80 md:text-base">
-        First 2 minutes free, 0.001 USDC/sec after.
+        First 2 minutes free, 0.0001 USDC/sec after.
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button

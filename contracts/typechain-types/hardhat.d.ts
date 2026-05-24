@@ -34,10 +34,6 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.IERC1363__factory>;
     getContractFactory(
-      name: "IERC5267",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.IERC5267__factory>;
-    getContractFactory(
       name: "ERC1155",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ERC1155__factory>;
@@ -70,17 +66,21 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.SafeERC20__factory>;
     getContractFactory(
-      name: "ECDSA",
+      name: "ERC721",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ECDSA__factory>;
+    ): Promise<Contracts.ERC721__factory>;
     getContractFactory(
-      name: "EIP712",
+      name: "IERC721Metadata",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.EIP712__factory>;
+    ): Promise<Contracts.IERC721Metadata__factory>;
     getContractFactory(
-      name: "MessageHashUtils",
+      name: "IERC721",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.MessageHashUtils__factory>;
+    ): Promise<Contracts.IERC721__factory>;
+    getContractFactory(
+      name: "IERC721Receiver",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.IERC721Receiver__factory>;
     getContractFactory(
       name: "ERC165",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -98,13 +98,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.ReentrancyGuard__factory>;
     getContractFactory(
-      name: "ShortStrings",
-      signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.ShortStrings__factory>;
-    getContractFactory(
       name: "Strings",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Strings__factory>;
+    getContractFactory(
+      name: "FanPassport",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.FanPassport__factory>;
     getContractFactory(
       name: "MockUSDC",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -114,13 +114,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.RoarBadges__factory>;
     getContractFactory(
-      name: "RoarballVault",
+      name: "StadiumAdBoard",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.RoarballVault__factory>;
+    ): Promise<Contracts.StadiumAdBoard__factory>;
     getContractFactory(
-      name: "RoarVault",
+      name: "IFanPassport",
       signerOrOptions?: ethers.Signer | FactoryOptions
-    ): Promise<Contracts.RoarVault__factory>;
+    ): Promise<Contracts.IFanPassport__factory>;
+    getContractFactory(
+      name: "VARSystem",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.VARSystem__factory>;
 
     getContractAt(
       name: "Ownable",
@@ -147,11 +151,6 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.IERC1363>;
-    getContractAt(
-      name: "IERC5267",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.IERC5267>;
     getContractAt(
       name: "ERC1155",
       address: string | ethers.Addressable,
@@ -193,20 +192,25 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.SafeERC20>;
     getContractAt(
-      name: "ECDSA",
+      name: "ERC721",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.ECDSA>;
+    ): Promise<Contracts.ERC721>;
     getContractAt(
-      name: "EIP712",
+      name: "IERC721Metadata",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.EIP712>;
+    ): Promise<Contracts.IERC721Metadata>;
     getContractAt(
-      name: "MessageHashUtils",
+      name: "IERC721",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.MessageHashUtils>;
+    ): Promise<Contracts.IERC721>;
+    getContractAt(
+      name: "IERC721Receiver",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.IERC721Receiver>;
     getContractAt(
       name: "ERC165",
       address: string | ethers.Addressable,
@@ -228,15 +232,15 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.ReentrancyGuard>;
     getContractAt(
-      name: "ShortStrings",
-      address: string | ethers.Addressable,
-      signer?: ethers.Signer
-    ): Promise<Contracts.ShortStrings>;
-    getContractAt(
       name: "Strings",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.Strings>;
+    getContractAt(
+      name: "FanPassport",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.FanPassport>;
     getContractAt(
       name: "MockUSDC",
       address: string | ethers.Addressable,
@@ -248,15 +252,20 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.RoarBadges>;
     getContractAt(
-      name: "RoarballVault",
+      name: "StadiumAdBoard",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.RoarballVault>;
+    ): Promise<Contracts.StadiumAdBoard>;
     getContractAt(
-      name: "RoarVault",
+      name: "IFanPassport",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
-    ): Promise<Contracts.RoarVault>;
+    ): Promise<Contracts.IFanPassport>;
+    getContractAt(
+      name: "VARSystem",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.VARSystem>;
 
     deployContract(
       name: "Ownable",
@@ -278,10 +287,6 @@ declare module "hardhat/types/runtime" {
       name: "IERC1363",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC1363>;
-    deployContract(
-      name: "IERC5267",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IERC5267>;
     deployContract(
       name: "ERC1155",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -315,17 +320,21 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.SafeERC20>;
     deployContract(
-      name: "ECDSA",
+      name: "ERC721",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ECDSA>;
+    ): Promise<Contracts.ERC721>;
     deployContract(
-      name: "EIP712",
+      name: "IERC721Metadata",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.EIP712>;
+    ): Promise<Contracts.IERC721Metadata>;
     deployContract(
-      name: "MessageHashUtils",
+      name: "IERC721",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.MessageHashUtils>;
+    ): Promise<Contracts.IERC721>;
+    deployContract(
+      name: "IERC721Receiver",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC721Receiver>;
     deployContract(
       name: "ERC165",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -343,13 +352,13 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ReentrancyGuard>;
     deployContract(
-      name: "ShortStrings",
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ShortStrings>;
-    deployContract(
       name: "Strings",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
+    deployContract(
+      name: "FanPassport",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FanPassport>;
     deployContract(
       name: "MockUSDC",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -359,13 +368,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.RoarBadges>;
     deployContract(
-      name: "RoarballVault",
+      name: "StadiumAdBoard",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.RoarballVault>;
+    ): Promise<Contracts.StadiumAdBoard>;
     deployContract(
-      name: "RoarVault",
+      name: "IFanPassport",
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.RoarVault>;
+    ): Promise<Contracts.IFanPassport>;
+    deployContract(
+      name: "VARSystem",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.VARSystem>;
 
     deployContract(
       name: "Ownable",
@@ -392,11 +405,6 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.IERC1363>;
-    deployContract(
-      name: "IERC5267",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.IERC5267>;
     deployContract(
       name: "ERC1155",
       args: any[],
@@ -438,20 +446,25 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.SafeERC20>;
     deployContract(
-      name: "ECDSA",
+      name: "ERC721",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ECDSA>;
+    ): Promise<Contracts.ERC721>;
     deployContract(
-      name: "EIP712",
+      name: "IERC721Metadata",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.EIP712>;
+    ): Promise<Contracts.IERC721Metadata>;
     deployContract(
-      name: "MessageHashUtils",
+      name: "IERC721",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.MessageHashUtils>;
+    ): Promise<Contracts.IERC721>;
+    deployContract(
+      name: "IERC721Receiver",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.IERC721Receiver>;
     deployContract(
       name: "ERC165",
       args: any[],
@@ -473,15 +486,15 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.ReentrancyGuard>;
     deployContract(
-      name: "ShortStrings",
-      args: any[],
-      signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.ShortStrings>;
-    deployContract(
       name: "Strings",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
+    deployContract(
+      name: "FanPassport",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FanPassport>;
     deployContract(
       name: "MockUSDC",
       args: any[],
@@ -493,15 +506,20 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.RoarBadges>;
     deployContract(
-      name: "RoarballVault",
+      name: "StadiumAdBoard",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.RoarballVault>;
+    ): Promise<Contracts.StadiumAdBoard>;
     deployContract(
-      name: "RoarVault",
+      name: "IFanPassport",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
-    ): Promise<Contracts.RoarVault>;
+    ): Promise<Contracts.IFanPassport>;
+    deployContract(
+      name: "VARSystem",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.VARSystem>;
 
     // default types
     getContractFactory(

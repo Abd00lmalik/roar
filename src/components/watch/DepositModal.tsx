@@ -28,53 +28,49 @@ export function DepositModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
-      <div className="glass-panel w-full max-w-md space-y-4 p-6 border-amber-500/20 bg-stadium/95">
+      <div className="glass-panel w-full max-w-md space-y-4 border-amber-500/20 bg-stadium/95 p-6">
         {!isConnected ? (
           <div className="space-y-3 text-center">
             <p className="text-white font-semibold">Your free preview has ended</p>
             <p className="text-white/60 text-sm">
               Connect your wallet and deposit USDC to keep watching.
+            </p>
+            <p className="text-white/60 text-sm text-center">
+              Rate: <span className="text-[var(--country-accent)] font-semibold">0.0001 USDC / second</span>
               <br />
-              Rate: 0.001 USDC / second
+              <span className="text-white/30 text-xs">
+                Fan Passport holders: 0.00005 USDC / second
+              </span>
             </p>
 
-            {/* Testnet faucet links */}
-            <div className="text-xs text-white/40 space-y-1 text-left bg-black/20 p-3 rounded border border-white/5">
-              <p className="font-semibold text-chalk/70 mb-1">Need testnet funds?</p>
+            <div className="text-xs text-white/40 space-y-1 rounded border border-white/5 bg-black/20 p-3 text-left">
+              <p className="mb-1 font-semibold text-chalk/70">Need testnet funds?</p>
               <a
                 href="https://www.okx.com/xlayer/faucet"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[var(--country-accent,#FFCE00)] hover:underline block"
+                className="block text-[var(--country-accent,#FFCE00)] hover:underline"
               >
-                Get OKB (gas) → OKX X Layer Faucet
+                Get OKB (gas) - OKX X Layer Faucet
               </a>
               <a
                 href="https://faucet.circle.com"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[var(--country-accent,#FFCE00)] hover:underline block"
+                className="block text-[var(--country-accent,#FFCE00)] hover:underline"
               >
-                Get USDC (testnet) → Circle Faucet
-              </a>
-              <a
-                href="https://www.okx.com/xlayer/bridge"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[var(--country-accent,#FFCE00)] hover:underline block"
-              >
-                Bridge USDC to X Layer → OKX Bridge
+                Get USDC (testnet) - Circle Faucet
               </a>
             </div>
 
             <button
               onClick={connectWallet}
-              className="w-full py-3 rounded-xl bg-[var(--country-accent,#FFCE00)] text-black font-bold text-sm hover:brightness-110 transition-all"
+              className="w-full rounded-xl bg-[var(--country-accent,#FFCE00)] py-3 text-sm font-bold text-black transition-all hover:brightness-110"
             >
               Connect Wallet to Continue
             </button>
-            <button 
-              className="text-xs text-chalk/60 hover:text-chalk/80 underline py-1 block mx-auto" 
+            <button
+              className="mx-auto block py-1 text-xs text-chalk/60 underline hover:text-chalk/80"
               onClick={onClose}
             >
               Dismiss (Pause Match)
@@ -82,19 +78,20 @@ export function DepositModal({
           </div>
         ) : (
           <>
-            <h3 className="text-lg font-display font-semibold text-amber-300">🏟️ Stadium Admission Ticket</h3>
-            <p className="text-sm text-chalk/90 leading-relaxed">
+            <h3 className="text-lg font-display font-semibold text-amber-300">Stadium Admission Ticket</h3>
+            <p className="text-sm leading-relaxed text-chalk/90">
               Your free preview window has expired. The ticket rate for this match is:
-              <span className="block my-2 text-xl font-mono font-bold text-chalk">0.001 USDC / second</span>
-              Please approve a USDC allowance to keep watching and support creators on-chain.
+              <span className="my-2 block text-xl font-mono font-bold text-chalk">0.0001 USDC / second</span>
+              <span className="block text-xs text-chalk/70">Fan Passport holders: 0.00005 USDC / second</span>
+              Continue watching to start Circle billing.
             </p>
             <div className="flex flex-col gap-2 pt-2">
               <FootballButton disabled={isApproving} onClick={onApprove}>
-                {isApproving ? "Approving Allowance..." : "Approve USDC Allowance 💳"}
+                {isApproving ? "Resuming..." : "Continue Watching"}
               </FootballButton>
-              <button 
+              <button
                 disabled={isApproving}
-                className="text-xs text-chalk/60 hover:text-chalk/80 underline py-1" 
+                className="py-1 text-xs text-chalk/60 underline hover:text-chalk/80"
                 onClick={onClose}
               >
                 Dismiss (Pause Match)

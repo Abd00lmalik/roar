@@ -35,7 +35,7 @@ export function ReactionBar() {
 
         <button
           disabled={!isConnected}
-          title={isConnected ? "Save to locker" : "Connect wallet to save"}
+          title={isConnected ? "Keep in locker" : "Connect wallet to keep in locker"}
           className="rounded bg-floodlight/20 border border-floodlight/30 px-2 py-1 text-floodlight hover:bg-floodlight/30 disabled:opacity-40 disabled:hover:bg-floodlight/20 transition-colors relative group font-medium"
         >
           🗄️ Keep in Locker

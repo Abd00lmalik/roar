@@ -1,9 +1,9 @@
 import {
   CREATOR_SPLIT_PCT,
   PLATFORM_SPLIT_PCT,
-  PRICE_PER_SECOND_USDC,
   REWARD_POOL_SPLIT_PCT,
 } from "@/lib/payments/constants";
+import { BILLING } from "@/lib/constants/protocol";
 import type { WatchSessionSummary } from "@/types";
 
 type SessionEndReason = "pause" | "end" | "navigate" | "tab_hidden";
@@ -47,7 +47,7 @@ export class WatchSessionTracker {
     }
     window.removeEventListener("beforeunload", this.handleBeforeUnload);
 
-    const amountUsdc = this.billableSeconds * PRICE_PER_SECOND_USDC;
+    const amountUsdc = this.billableSeconds * (Number(BILLING.STANDARD_RATE_MICRO) / 1_000_000);
     const summary: WatchSessionSummary = {
       reason,
       totalSeconds: this.totalSeconds,

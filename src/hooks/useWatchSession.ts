@@ -1,38 +1,21 @@
-// src/hooks/useWatchSession.ts
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
-import { useSignTypedData, useAccount, useReadContract } from "wagmi";
+import { useEffect, useRef, useCallback } from "react";
+import { useAccount } from "wagmi";
+import { useQuery } from "@tanstack/react-query";
 import { getAddress } from "viem";
 import { createClient } from "@/lib/supabase/client";
-import { PROTOCOL } from "@/lib/constants/protocol";
-
-const WATCH_VOUCHER_TYPES = {
-  WatchVoucher: [
-    { name: "user",      type: "address" },
-    { name: "creator",   type: "address" },
-    { name: "totalOwed", type: "uint256" },
-    { name: "nonce",     type: "uint256" },
-  ],
-} as const;
-
-// Minimal ABI slice — only the nonces read is needed client-side
-const VAULT_NONCE_ABI = [
-  {
-    inputs: [{ name: "user", type: "address" }],
-    name: "nonces",
-    outputs: [{ name: "", type: "uint256" }],
-    stateMutability: "view",
-    type: "function",
-  },
-] as const;
+import { BILLING } from "@/lib/constants/protocol";
+import { useSessionStore } from "@/store/sessionStore";
 
 interface UseWatchSessionOptions {
-  creatorAddress: `0x${string}`;
+  creatorAddress: string;
   videoId: string;
   videoElement: HTMLVideoElement | null;
   enabled: boolean;
 }
+
+const ZERO = BigInt(0);
 
 export function useWatchSession({
   creatorAddress,
@@ -41,259 +24,152 @@ export function useWatchSession({
   enabled,
 }: UseWatchSessionOptions) {
   const { address: userAddress } = useAccount();
-  const { signTypedDataAsync }   = useSignTypedData();
+  const session = useSessionStore();
 
-  // ── On-chain nonce ──────────────────────────────────────────────────────────
-  const { data: onChainNonce, refetch: refetchNonce } = useReadContract({
-    address: PROTOCOL.VAULT_ADDRESS,
-    abi:     VAULT_NONCE_ABI,
-    functionName: "nonces",
-    args:    userAddress ? [userAddress] : undefined,
-    query:   { enabled: !!userAddress },
+  const totalOwedRef = useRef(ZERO);
+  const billableSecondsRef = useRef(0);
+  const totalSecondsRef = useRef(0);
+  const accumulatedSecondsRef = useRef(0);
+  const lastTickRef = useRef<number | null>(null);
+  const tickerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { data: hasPassport } = useQuery({
+    queryKey: ["passport", userAddress],
+    queryFn: async () => {
+      if (!userAddress) return false;
+      const supabase = createClient();
+      if (!supabase) return false;
+      const { data } = await supabase
+        .from("fan_passports")
+        .select("wallet_address")
+        .eq("wallet_address", getAddress(userAddress))
+        .maybeSingle();
+      return !!data;
+    },
+    enabled: !!userAddress,
   });
 
-  // ── Billing state refs (never cause re-renders) ────────────────────────────
-  const totalOwedRef        = useRef(BigInt(0));
-  const accumulatedSeconds  = useRef(0);
-  const lastTickRef         = useRef<number | null>(null);
-  const tickerRef           = useRef<ReturnType<typeof setInterval> | null>(null);
-  const nonceRef            = useRef<bigint | undefined>(undefined);
+  const billingRate = hasPassport
+    ? BILLING.PASSPORT_RATE_MICRO
+    : BILLING.STANDARD_RATE_MICRO;
 
-  // Keep nonceRef in sync with on-chain value
-  useEffect(() => {
-    nonceRef.current = onChainNonce as bigint | undefined;
-  }, [onChainNonce]);
-
-  // ── Carry-forward Unsigned Voucher States ──────────────────────────────────
-  const [unsignedVoucher, setUnsignedVoucher] = useState<{
-    id: string;
-    totalOwed: string;
-    rawTotalOwed: bigint;
-    nonce: string;
-    creatorAddress: string;
-  } | null>(null);
-  const [resignLoading, setResignLoading] = useState(false);
-
-  useEffect(() => {
-    if (!userAddress || !enabled) return;
-
-    const checkAndSignUnsigned = async () => {
-      const supabase = createClient();
-      if (!supabase) return;
-
-      const { data: unsignedVouchers, error } = await supabase
-        .from("vouchers")
-        .select("*")
-        .eq("user_address", getAddress(userAddress))
-        .eq("status", "unsigned")
-        .limit(1);
-
-      if (error || !unsignedVouchers || unsignedVouchers.length === 0) return;
-
-      const voucher = unsignedVouchers[0];
-      setUnsignedVoucher({
-        id: voucher.id,
-        totalOwed: (Number(voucher.total_owed) / 1_000_000).toFixed(4),
-        rawTotalOwed: BigInt(voucher.total_owed),
-        nonce: voucher.nonce.toString(),
-        creatorAddress: voucher.creator_address,
-      });
-    };
-
-    checkAndSignUnsigned();
-  }, [userAddress, enabled]);
-
-  const handleResign = async () => {
-    if (!unsignedVoucher || !userAddress) return;
-    setResignLoading(true);
-    try {
-      const signature = await signTypedDataAsync({
-        domain: {
-          name:            "RoarballVault",
-          version:         "1",
-          chainId:         PROTOCOL.CHAIN_ID,
-          verifyingContract: PROTOCOL.VAULT_ADDRESS,
-        },
-        types:       WATCH_VOUCHER_TYPES,
-        primaryType: "WatchVoucher",
-        message: {
-          user:      userAddress,
-          creator:   unsignedVoucher.creatorAddress as `0x${string}`,
-          totalOwed: unsignedVoucher.rawTotalOwed,
-          nonce:     BigInt(unsignedVoucher.nonce),
-        },
-      });
-
-      const response = await fetch("/api/vouchers/sink", {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user:      userAddress,
-          creator:   unsignedVoucher.creatorAddress,
-          totalOwed: unsignedVoucher.rawTotalOwed.toString(),
-          nonce:     unsignedVoucher.nonce,
-          signature,
-        }),
-      });
-
-      if (!response.ok) {
-        console.error("[useWatchSession] Failed to submit signed voucher:", await response.text());
-      }
-      setUnsignedVoucher(null);
-    } catch (err) {
-      console.error("[useWatchSession] Sign carry-forward failed:", err);
-      const supabase = createClient();
-      if (supabase) {
-        await supabase
-          .from("vouchers")
-          .update({ status: "failed" })
-          .eq("id", unsignedVoucher.id);
-      }
-      setUnsignedVoucher(null);
-    } finally {
-      setResignLoading(false);
-      await refetchNonce();
-    }
-  };
-
-  const dismissUnsigned = async () => {
-    if (!unsignedVoucher) return;
-    const supabase = createClient();
-    if (supabase) {
-      await supabase
-        .from("vouchers")
-        .update({ status: "failed" })
-        .eq("id", unsignedVoucher.id);
-    }
-    setUnsignedVoucher(null);
-  };
-
-  // ── Billing gate ───────────────────────────────────────────────────────────
   const shouldBill = useCallback((): boolean => {
-    if (!enabled)                          return false;
-    if (!userAddress || !creatorAddress)   return false;
-    if (!videoElement)                     return false;
-    if (document.hidden)                   return false;
-    if (videoElement.paused)               return false;
-    if (videoElement.seeking)              return false;
+    if (!enabled) return false;
+    if (!userAddress) return false;
+    if (!videoElement) return false;
+    if (document.hidden) return false;
+    if (videoElement.paused) return false;
+    if (videoElement.seeking) return false;
     if (videoElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return false;
-    if (getAddress(userAddress) === getAddress(creatorAddress))      return false;
+    if (getAddress(userAddress) === getAddress(creatorAddress)) return false;
     return true;
   }, [enabled, userAddress, creatorAddress, videoElement]);
 
-  // ── Voucher flush ──────────────────────────────────────────────────────────
-  const flushVoucher = useCallback(async () => {
-    if (totalOwedRef.current === BigInt(0))  return;
-    if (!userAddress)                        return;
-    if (nonceRef.current === undefined)      return;
+  const flushSession = useCallback(async () => {
+    if (!userAddress || totalOwedRef.current === ZERO) return;
 
     const totalOwed = totalOwedRef.current;
-    const nonce     = nonceRef.current;
-
     try {
-      const signature = await signTypedDataAsync({
-        domain: {
-          name:            "RoarballVault",
-          version:         "1",
-          chainId:         PROTOCOL.CHAIN_ID,
-          verifyingContract: PROTOCOL.VAULT_ADDRESS,
-        },
-        types:       WATCH_VOUCHER_TYPES,
-        primaryType: "WatchVoucher",
-        message: {
-          user:      userAddress,
-          creator:   creatorAddress,
-          totalOwed,
-          nonce,
-        },
-      });
-
-      const response = await fetch("/api/vouchers/sink", {
-        method:  "POST",
+      const response = await fetch("/api/payments/settle", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user:      userAddress,
-          creator:   creatorAddress,
-          totalOwed: totalOwed.toString(),
-          nonce:     nonce.toString(),
-          signature,
+          userAddress,
+          creatorAddress,
+          videoId,
+          totalOwedMicro: totalOwed.toString(),
         }),
       });
 
-      if (!response.ok) {
-        console.error("[useWatchSession] Sink rejected:", await response.text());
-        return;
-      }
-
-      totalOwedRef.current = BigInt(0);
-      await refetchNonce();
-    } catch (err) {
-      console.error("[useWatchSession] Flush failed, carrying forward:", err);
+      if (!response.ok) return;
+      totalOwedRef.current = ZERO;
+    } catch {
+      // Carry forward unpaid balance.
     }
-  }, [userAddress, creatorAddress, signTypedDataAsync, refetchNonce]);
+  }, [userAddress, creatorAddress, videoId]);
 
-  // ── Billing tick loop — keyed to videoId so track changes restart cleanly ──
   useEffect(() => {
-    totalOwedRef.current       = BigInt(0);
-    accumulatedSeconds.current = 0;
-    lastTickRef.current        = null;
+    totalOwedRef.current = ZERO;
+    billableSecondsRef.current = 0;
+    totalSecondsRef.current = 0;
+    accumulatedSecondsRef.current = 0;
+    lastTickRef.current = null;
+
+    session.reset();
 
     tickerRef.current = setInterval(() => {
-      if (!shouldBill()) {
-        lastTickRef.current = null;
+      const now = performance.now();
+      if (lastTickRef.current !== null) {
+        const elapsed = Math.floor((now - lastTickRef.current) / 1000);
+        if (elapsed > 0) {
+          totalSecondsRef.current += elapsed;
+        }
+      }
+
+      if (shouldBill()) {
+        if (lastTickRef.current !== null) {
+          const billed = Math.floor((now - lastTickRef.current) / 1000);
+          if (billed > 0) {
+            totalOwedRef.current += BigInt(billed) * billingRate;
+            billableSecondsRef.current += billed;
+            accumulatedSecondsRef.current += billed;
+          }
+        }
+      } else {
+        lastTickRef.current = now;
+        session.setLive({
+          isActive: false,
+          isPaused: true,
+          totalSeconds: totalSecondsRef.current,
+          billableSeconds: billableSecondsRef.current,
+          currentCost: Number(totalOwedRef.current) / 1_000_000,
+        });
         return;
       }
 
-      const now = performance.now();
-      if (lastTickRef.current !== null) {
-        const elapsedMs      = now - lastTickRef.current;
-        const billedSeconds  = Math.floor(elapsedMs / 1000);
-
-        if (billedSeconds > 0) {
-          totalOwedRef.current       += BigInt(billedSeconds) * PROTOCOL.MICRO_USDC_PER_SECOND;
-          accumulatedSeconds.current += billedSeconds;
-        }
-      }
       lastTickRef.current = now;
 
-      if (accumulatedSeconds.current >= PROTOCOL.FLUSH_INTERVAL_SECONDS) {
-        accumulatedSeconds.current = 0;
-        flushVoucher();
+      session.setLive({
+        isActive: true,
+        isPaused: false,
+        totalSeconds: totalSecondsRef.current,
+        billableSeconds: billableSecondsRef.current,
+        currentCost: Number(totalOwedRef.current) / 1_000_000,
+      });
+
+      if (accumulatedSecondsRef.current >= BILLING.FLUSH_INTERVAL_SECS) {
+        accumulatedSecondsRef.current = 0;
+        flushSession();
       }
-    }, 1_000);
+    }, 1000);
 
     return () => {
       if (tickerRef.current) clearInterval(tickerRef.current);
-      flushVoucher();
+      flushSession();
     };
-  }, [videoId, shouldBill, flushVoucher]);
+  }, [videoId, shouldBill, flushSession, billingRate, session]);
 
-  // ── Tab visibility flush ───────────────────────────────────────────────────
   useEffect(() => {
     const onVisibilityChange = () => {
-      if (document.hidden) {
-        lastTickRef.current = null;
-        flushVoucher();
-      }
+      if (!document.hidden) return;
+      lastTickRef.current = null;
+      flushSession();
     };
     document.addEventListener("visibilitychange", onVisibilityChange);
     return () => document.removeEventListener("visibilitychange", onVisibilityChange);
-  }, [flushVoucher]);
+  }, [flushSession]);
 
-  // ── Page unload flush (sendBeacon fallback for beforeunload reliability) ───
   useEffect(() => {
     const onBeforeUnload = () => {
-      if (totalOwedRef.current === BigInt(0) || !userAddress || nonceRef.current === undefined) return;
-      navigator.sendBeacon("/api/vouchers/beacon", JSON.stringify({
-        user:      userAddress,
-        creator:   creatorAddress,
-        totalOwed: totalOwedRef.current.toString(),
-        nonce:     nonceRef.current.toString(),
+      if (!userAddress || totalOwedRef.current === ZERO) return;
+      navigator.sendBeacon("/api/payments/settle", JSON.stringify({
+        userAddress,
+        creatorAddress,
+        videoId,
+        totalOwedMicro: totalOwedRef.current.toString(),
       }));
     };
     window.addEventListener("beforeunload", onBeforeUnload);
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [userAddress, creatorAddress]);
-
-  return { unsignedVoucher, resignLoading, handleResign, dismissUnsigned };
+  }, [userAddress, creatorAddress, videoId]);
 }

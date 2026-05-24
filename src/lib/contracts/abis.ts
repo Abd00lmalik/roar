@@ -9,41 +9,14 @@ export const erc20Abi = [
     ],
     outputs: [{ name: "", type: "bool" }],
   },
-] as const;
-
-export const roarVaultAbi = [
   {
-    name: "settleVoucher",
+    name: "allowance",
     type: "function",
-    stateMutability: "nonpayable",
+    stateMutability: "view",
     inputs: [
-      { name: "user", type: "address" },
-      { name: "creator", type: "address" },
-      { name: "totalOwed", type: "uint256" },
-      { name: "nonce", type: "uint256" },
-      { name: "signature", type: "bytes" },
+      { name: "owner", type: "address" },
+      { name: "spender", type: "address" },
     ],
-    outputs: [],
-  },
-  {
-    name: "claimCreatorEarnings",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [],
-    outputs: [],
-  },
-  {
-    name: "creatorEarnings",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "creator", type: "address" }],
-    outputs: [{ name: "", type: "uint256" }],
-  },
-  {
-    name: "nonces",
-    type: "function",
-    stateMutability: "view",
-    inputs: [{ name: "user", type: "address" }],
     outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;
@@ -59,5 +32,39 @@ export const roarBadgesAbi = [
       { name: "badgeName", type: "string" },
     ],
     outputs: [],
+  },
+] as const;
+
+export const FAN_PASSPORT_ABI = [
+  {
+    name: "mintPassport",
+    type: "function",
+    stateMutability: "payable",
+    inputs: [{ name: "countryCode", type: "string" }],
+    outputs: [],
+  },
+  {
+    name: "getStakedCountry",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "holder", type: "address" }],
+    outputs: [{ name: "", type: "string" }],
+  },
+  {
+    name: "holderToTokenId",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "holder", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+export const VAR_SYSTEM_ABI = [
+  {
+    name: "isVideoBurned",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "videoId", type: "string" }],
+    outputs: [{ name: "", type: "bool" }],
   },
 ] as const;

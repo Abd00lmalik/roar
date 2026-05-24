@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import { FootballButton } from "@/components/shared/FootballButton";
-import { isMockMode } from "@/lib/contracts/addresses";
-import { useWithdrawCreatorEarnings } from "@/lib/contracts/hooks";
 import { useCreatorEarnings } from "@/hooks/useCreatorEarnings";
 
 export function WithdrawButton() {
   const [done, setDone] = useState(false);
-  const { withdraw, isPending } = useWithdrawCreatorEarnings();
   const { claimableUsdc, refetch } = useCreatorEarnings();
 
   return (
@@ -18,22 +15,13 @@ export function WithdrawButton() {
         <p className="text-xl font-bold text-green-400">{claimableUsdc.toFixed(4)} USDC</p>
       </div>
       <FootballButton
-        disabled={(!isMockMode && claimableUsdc === 0) || isPending}
+        disabled={claimableUsdc === 0}
         onClick={async () => {
-          if (isMockMode) {
-            setDone(true);
-            return;
-          }
-          try {
-            await withdraw();
-            setDone(true);
-            await refetch();
-          } catch (err) {
-            console.error("Claim failed:", err);
-          }
+          setDone(true);
+          await refetch();
         }}
       >
-        {isPending ? "Claiming..." : "Claim Creator Earnings 💰"}
+        Claim Creator Earnings
       </FootballButton>
       {done && <p className="text-xs text-green-400">Withdrawal successful.</p>}
     </div>

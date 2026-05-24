@@ -19,7 +19,7 @@ export function ProfileForm({ countryCode, onSubmit }: Props) {
     [displayName],
   );
 
-  const handleSave = () => {
+  const submitProfile = () => {
     if (!countryCode || !displayName) return;
     onSubmit({ displayName, handle: handle || autoHandle, bio });
   };
@@ -49,7 +49,7 @@ export function ProfileForm({ countryCode, onSubmit }: Props) {
         value={bio}
         onChange={(e) => setBio(e.target.value)}
       />
-      <FootballButton disabled={!countryCode || !displayName} onClick={handleSave}>
+      <FootballButton disabled={!countryCode || !displayName} onClick={submitProfile}>
         Enter the Stadium
       </FootballButton>
     </div>
