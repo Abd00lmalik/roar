@@ -23,10 +23,12 @@ const config: HardhatUserConfig = {
     artifacts: path.join(dirname, "artifacts"),
   },
   networks: {
-    xlayerTestnet: {
-      url: process.env.XLAYER_TESTNET_RPC_URL || "https://testrpc.xlayer.tech",
+    "xlayer-testnet": {
+      url: process.env.XLAYER_TESTNET_RPC_URL ?? "https://testrpc.xlayer.tech",
       chainId: 1952,
-      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
+      accounts: process.env.DEPLOYER_PRIVATE_KEY
+        ? [process.env.DEPLOYER_PRIVATE_KEY]
+        : [],
     },
   },
 };

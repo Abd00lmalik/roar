@@ -1,20 +1,4 @@
-export type CountryCode =
-  | "NG"
-  | "BR"
-  | "AR"
-  | "FR"
-  | "MA"
-  | "GH"
-  | "EN"
-  | "PT"
-  | "ES"
-  | "DE"
-  | "US"
-  | "MX"
-  | "JP"
-  | "KR"
-  | "SN"
-  | "CM";
+export type CountryCode = string;
 
 export type ReactionType =
   | "hot_take"

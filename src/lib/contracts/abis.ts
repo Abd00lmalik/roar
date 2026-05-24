@@ -13,37 +13,38 @@ export const erc20Abi = [
 
 export const roarVaultAbi = [
   {
-    name: "deposit",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [{ name: "amount", type: "uint256" }],
-    outputs: [],
-  },
-  {
-    name: "withdrawCreatorEarnings",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [],
-    outputs: [],
-  },
-  {
-    name: "withdrawUnusedBalance",
-    type: "function",
-    stateMutability: "nonpayable",
-    inputs: [],
-    outputs: [],
-  },
-  {
-    name: "settleSession",
+    name: "settleVoucher",
     type: "function",
     stateMutability: "nonpayable",
     inputs: [
-      { name: "viewer", type: "address" },
+      { name: "user", type: "address" },
       { name: "creator", type: "address" },
-      { name: "videoHash", type: "bytes32" },
-      { name: "billableSeconds", type: "uint256" },
+      { name: "totalOwed", type: "uint256" },
+      { name: "nonce", type: "uint256" },
+      { name: "signature", type: "bytes" },
     ],
     outputs: [],
+  },
+  {
+    name: "claimCreatorEarnings",
+    type: "function",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
+  {
+    name: "creatorEarnings",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "creator", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    name: "nonces",
+    type: "function",
+    stateMutability: "view",
+    inputs: [{ name: "user", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
   },
 ] as const;
 

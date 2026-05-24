@@ -1,13 +1,133 @@
-export function MatchTakes() {
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { EmptyState } from "@/components/ui/EmptyState";
+
+const TAGS = ["Tactical", "Banter", "Hot Take", "Disagree"] as const;
+type TakeTag = typeof TAGS[number];
+
+interface MatchTakesProps {
+  videoId: string;
+  authorId: string;
+}
+
+export function MatchTakes({ videoId, authorId }: MatchTakesProps) {
+  const [body,    setBody]    = useState("");
+  const [tag,     setTag]     = useState<TakeTag>("Banter");
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState<string | null>(null);
+  const [takes,   setTakes]   = useState<any[]>([]);
+
+  const fetchTakes = useCallback(async () => {
+    const supabase = createClient();
+    if (!supabase) return;
+    const { data } = await supabase
+      .from("match_takes")
+      .select("*, profiles:author_id(display_name, handle)")
+      .eq("video_id", videoId)
+      .order("created_at", { ascending: false });
+    if (data) {
+      setTakes(data);
+    }
+  }, [videoId]);
+
+  useEffect(() => {
+    fetchTakes();
+  }, [fetchTakes]);
+
+  const submitTake = async () => {
+    if (!body.trim()) return;
+    if (body.length > 500) {
+      setError("Match takes must be 500 characters or fewer.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+
+    const supabase = createClient();
+    if (!supabase) {
+      setError("Database is not configured.");
+      setLoading(false);
+      return;
+    }
+    const { error: dbError } = await supabase
+      .from("match_takes")
+      .insert({ video_id: videoId, author_id: authorId, body: body.trim(), tag });
+
+    setLoading(false);
+    if (dbError) {
+      setError("Failed to post your take. Try again.");
+    } else {
+      setBody("");
+      fetchTakes();
+    }
+  };
+
   return (
-    <div className="glass-panel p-4">
-      <h3 className="mb-2 font-semibold">Match Takes</h3>
-      <p className="mb-3 text-sm text-chalk/70">NaijaStand breaking it down perfectly.</p>
+    <section className="glass-panel rounded-2xl p-4 space-y-3">
+      <h2 className="text-base font-semibold text-chalk">Match Takes</h2>
+
+      {/* Tag selector — exactly four options, no free-text category */}
+      <div className="flex gap-2 flex-wrap">
+        {TAGS.map((t) => (
+          <button
+            key={t}
+            onClick={() => setTag(t)}
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+              tag === t
+                ? "bg-[var(--country-accent)] text-black"
+                : "bg-white/[0.06] text-white/60 hover:bg-white/[0.10]"
+            }`}
+          >
+            {t}
+          </button>
+        ))}
+      </div>
+
       <textarea
-        className="w-full rounded bg-black/40 p-2 text-sm"
+        value={body}
+        onChange={(e) => setBody(e.target.value)}
+        maxLength={500}
         rows={3}
         placeholder="Drop your match take..."
+        className="w-full rounded-xl bg-white/[0.04] border border-white/[0.08] p-3 text-sm text-chalk placeholder-white/30 resize-none focus:outline-none focus:ring-1 focus:ring-[var(--country-accent)]"
       />
-    </div>
+
+      {error && <p className="text-red-400 text-xs">{error}</p>}
+
+      <button
+        onClick={submitTake}
+        disabled={loading || !body.trim()}
+        className="px-4 py-2 rounded-xl bg-[var(--country-accent)] text-black text-sm font-semibold disabled:opacity-40 transition-opacity"
+      >
+        {loading ? "Posting..." : "Post Take"}
+      </button>
+
+      {/* Render takes list */}
+      <div className="mt-4 space-y-3 pt-3 border-t border-white/5">
+        {takes.length === 0 ? (
+          <EmptyState
+            icon="🎙️"
+            heading="The stands are quiet"
+            body="Be the first to post a match take."
+          />
+        ) : (
+          takes.map((take) => (
+            <div key={take.id} className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-xl space-y-1">
+              <div className="flex justify-between items-center text-xs text-white/40">
+                <span className="font-semibold text-white/65">
+                  {take.profiles?.display_name || "Anonymous"} (@{take.profiles?.handle || "user"})
+                </span>
+                <span className="px-2 py-0.5 rounded-full bg-white/5 text-[10px] text-[var(--country-accent)] font-medium">
+                  {take.tag}
+                </span>
+              </div>
+              <p className="text-sm text-white/80">{take.body}</p>
+            </div>
+          ))
+        )}
+      </div>
+    </section>
   );
 }

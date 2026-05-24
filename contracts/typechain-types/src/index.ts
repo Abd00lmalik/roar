@@ -4,3 +4,4 @@
 export type { MockUSDC } from "./MockUSDC";
 export type { RoarBadges } from "./RoarBadges";
 export type { RoarVault } from "./RoarVault";
+export type { RoarballVault } from "./RoarballVault";

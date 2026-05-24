@@ -3,9 +3,10 @@
 @tailwind utilities;
 
 :root {
-  --country-from: #008751;
-  --country-to: #ffffff;
-  --country-accent: #00c853;
+  --country-from:   #1a1a2e;
+  --country-via:    #16213e;
+  --country-to:     #0f3460;
+  --country-accent: #e94560;
 }
 
 html,
@@ -21,9 +22,11 @@ body {
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   border-radius: 12px;
 }
 
@@ -31,6 +34,11 @@ body {
   background-image: linear-gradient(
     135deg,
     var(--country-from) 0%,
+    var(--country-via) 50%,
     var(--country-to) 100%
   );
+}
+
+.stadium-floodlight {
+  background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.04) 0%, transparent 60%);
 }

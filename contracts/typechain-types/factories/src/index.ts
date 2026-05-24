@@ -4,3 +4,4 @@
 export { MockUSDC__factory } from "./MockUSDC__factory";
 export { RoarBadges__factory } from "./RoarBadges__factory";
 export { RoarVault__factory } from "./RoarVault__factory";
+export { RoarballVault__factory } from "./RoarballVault__factory";

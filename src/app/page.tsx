@@ -19,7 +19,7 @@ export default function HomePage() {
       <HowItWorks />
       <footer className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pb-8 text-xs text-chalk/70">
         <XLayerBadge />
-        <span>Roar © 2025</span>
+        <span>Roarball © 2025</span>
       </footer>
     </div>
   );

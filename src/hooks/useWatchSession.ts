@@ -1,111 +1,299 @@
+// src/hooks/useWatchSession.ts
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { WatchSessionTracker, pendingSessionStorageKey } from "@/lib/payments/sessionTracker";
-import { PRICE_PER_SECOND_USDC } from "@/lib/payments/constants";
-import { useFreeTime } from "@/hooks/useFreeTime";
-import { useSessionStore } from "@/store/sessionStore";
-import type { WatchSessionSummary } from "@/types";
+import { useEffect, useRef, useCallback, useState } from "react";
+import { useSignTypedData, useAccount, useReadContract } from "wagmi";
+import { getAddress } from "viem";
+import { createClient } from "@/lib/supabase/client";
+import { PROTOCOL } from "@/lib/constants/protocol";
 
-export function useWatchSession() {
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
-  const [freeTimeExhausted, setFreeTimeExhausted] = useState(false);
-  const [retryPendingFound, setRetryPendingFound] = useState(false);
-  const { remaining, consumeSecond } = useFreeTime();
-  const setLive = useSessionStore((s) => s.setLive);
-  const setSummary = useSessionStore((s) => s.setSummary);
-  const reset = useSessionStore((s) => s.reset);
-  const totalSecondsRef = useRef(0);
-  const isPlayingRef = useRef(false);
-  const isBufferingRef = useRef(false);
-  const remainingRef = useRef(remaining);
+const WATCH_VOUCHER_TYPES = {
+  WatchVoucher: [
+    { name: "user",      type: "address" },
+    { name: "creator",   type: "address" },
+    { name: "totalOwed", type: "uint256" },
+    { name: "nonce",     type: "uint256" },
+  ],
+} as const;
 
-  const trackerRef = useRef<WatchSessionTracker | null>(null);
+// Minimal ABI slice — only the nonces read is needed client-side
+const VAULT_NONCE_ABI = [
+  {
+    inputs: [{ name: "user", type: "address" }],
+    name: "nonces",
+    outputs: [{ name: "", type: "uint256" }],
+    stateMutability: "view",
+    type: "function",
+  },
+] as const;
+
+interface UseWatchSessionOptions {
+  creatorAddress: `0x${string}`;
+  videoId: string;
+  videoElement: HTMLVideoElement | null;
+  enabled: boolean;
+}
+
+export function useWatchSession({
+  creatorAddress,
+  videoId,
+  videoElement,
+  enabled,
+}: UseWatchSessionOptions) {
+  const { address: userAddress } = useAccount();
+  const { signTypedDataAsync }   = useSignTypedData();
+
+  // ── On-chain nonce ──────────────────────────────────────────────────────────
+  const { data: onChainNonce, refetch: refetchNonce } = useReadContract({
+    address: PROTOCOL.VAULT_ADDRESS,
+    abi:     VAULT_NONCE_ABI,
+    functionName: "nonces",
+    args:    userAddress ? [userAddress] : undefined,
+    query:   { enabled: !!userAddress },
+  });
+
+  // ── Billing state refs (never cause re-renders) ────────────────────────────
+  const totalOwedRef        = useRef(BigInt(0));
+  const accumulatedSeconds  = useRef(0);
+  const lastTickRef         = useRef<number | null>(null);
+  const tickerRef           = useRef<ReturnType<typeof setInterval> | null>(null);
+  const nonceRef            = useRef<bigint | undefined>(undefined);
+
+  // Keep nonceRef in sync with on-chain value
+  useEffect(() => {
+    nonceRef.current = onChainNonce as bigint | undefined;
+  }, [onChainNonce]);
+
+  // ── Carry-forward Unsigned Voucher States ──────────────────────────────────
+  const [unsignedVoucher, setUnsignedVoucher] = useState<{
+    id: string;
+    totalOwed: string;
+    rawTotalOwed: bigint;
+    nonce: string;
+    creatorAddress: string;
+  } | null>(null);
+  const [resignLoading, setResignLoading] = useState(false);
 
   useEffect(() => {
-    const pending = localStorage.getItem(pendingSessionStorageKey);
-    setRetryPendingFound(Boolean(pending));
-  }, []);
+    if (!userAddress || !enabled) return;
 
-  const onSessionEnd = useCallback(
-    (summary: WatchSessionSummary) => {
-      setSummary(summary);
-      setLive({
-        isActive: false,
-        isPaused: summary.reason === "pause",
-        billableSeconds: summary.billableSeconds,
-        totalSeconds: summary.totalSeconds,
-        currentCost: summary.billableSeconds * PRICE_PER_SECOND_USDC,
+    const checkAndSignUnsigned = async () => {
+      const supabase = createClient();
+      if (!supabase) return;
+
+      const { data: unsignedVouchers, error } = await supabase
+        .from("vouchers")
+        .select("*")
+        .eq("user_address", getAddress(userAddress))
+        .eq("status", "unsigned")
+        .limit(1);
+
+      if (error || !unsignedVouchers || unsignedVouchers.length === 0) return;
+
+      const voucher = unsignedVouchers[0];
+      setUnsignedVoucher({
+        id: voucher.id,
+        totalOwed: (Number(voucher.total_owed) / 1_000_000).toFixed(4),
+        rawTotalOwed: BigInt(voucher.total_owed),
+        nonce: voucher.nonce.toString(),
+        creatorAddress: voucher.creator_address,
       });
-    },
-    [setLive, setSummary],
-  );
+    };
 
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
+    checkAndSignUnsigned();
+  }, [userAddress, enabled]);
 
-  useEffect(() => {
-    isBufferingRef.current = isBuffering;
-  }, [isBuffering]);
+  const handleResign = async () => {
+    if (!unsignedVoucher || !userAddress) return;
+    setResignLoading(true);
+    try {
+      const signature = await signTypedDataAsync({
+        domain: {
+          name:            "RoarballVault",
+          version:         "1",
+          chainId:         PROTOCOL.CHAIN_ID,
+          verifyingContract: PROTOCOL.VAULT_ADDRESS,
+        },
+        types:       WATCH_VOUCHER_TYPES,
+        primaryType: "WatchVoucher",
+        message: {
+          user:      userAddress,
+          creator:   unsignedVoucher.creatorAddress as `0x${string}`,
+          totalOwed: unsignedVoucher.rawTotalOwed,
+          nonce:     BigInt(unsignedVoucher.nonce),
+        },
+      });
 
-  useEffect(() => {
-    remainingRef.current = remaining;
-  }, [remaining]);
+      const response = await fetch("/api/vouchers/sink", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user:      userAddress,
+          creator:   unsignedVoucher.creatorAddress,
+          totalOwed: unsignedVoucher.rawTotalOwed.toString(),
+          nonce:     unsignedVoucher.nonce,
+          signature,
+        }),
+      });
 
+      if (!response.ok) {
+        console.error("[useWatchSession] Failed to submit signed voucher:", await response.text());
+      }
+      setUnsignedVoucher(null);
+    } catch (err) {
+      console.error("[useWatchSession] Sign carry-forward failed:", err);
+      const supabase = createClient();
+      if (supabase) {
+        await supabase
+          .from("vouchers")
+          .update({ status: "failed" })
+          .eq("id", unsignedVoucher.id);
+      }
+      setUnsignedVoucher(null);
+    } finally {
+      setResignLoading(false);
+      await refetchNonce();
+    }
+  };
+
+  const dismissUnsigned = async () => {
+    if (!unsignedVoucher) return;
+    const supabase = createClient();
+    if (supabase) {
+      await supabase
+        .from("vouchers")
+        .update({ status: "failed" })
+        .eq("id", unsignedVoucher.id);
+    }
+    setUnsignedVoucher(null);
+  };
+
+  // ── Billing gate ───────────────────────────────────────────────────────────
+  const shouldBill = useCallback((): boolean => {
+    if (!enabled)                          return false;
+    if (!userAddress || !creatorAddress)   return false;
+    if (!videoElement)                     return false;
+    if (document.hidden)                   return false;
+    if (videoElement.paused)               return false;
+    if (videoElement.seeking)              return false;
+    if (videoElement.readyState < HTMLMediaElement.HAVE_FUTURE_DATA) return false;
+    if (getAddress(userAddress) === getAddress(creatorAddress))      return false;
+    return true;
+  }, [enabled, userAddress, creatorAddress, videoElement]);
+
+  // ── Voucher flush ──────────────────────────────────────────────────────────
+  const flushVoucher = useCallback(async () => {
+    if (totalOwedRef.current === BigInt(0))  return;
+    if (!userAddress)                        return;
+    if (nonceRef.current === undefined)      return;
+
+    const totalOwed = totalOwedRef.current;
+    const nonce     = nonceRef.current;
+
+    try {
+      const signature = await signTypedDataAsync({
+        domain: {
+          name:            "RoarballVault",
+          version:         "1",
+          chainId:         PROTOCOL.CHAIN_ID,
+          verifyingContract: PROTOCOL.VAULT_ADDRESS,
+        },
+        types:       WATCH_VOUCHER_TYPES,
+        primaryType: "WatchVoucher",
+        message: {
+          user:      userAddress,
+          creator:   creatorAddress,
+          totalOwed,
+          nonce,
+        },
+      });
+
+      const response = await fetch("/api/vouchers/sink", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user:      userAddress,
+          creator:   creatorAddress,
+          totalOwed: totalOwed.toString(),
+          nonce:     nonce.toString(),
+          signature,
+        }),
+      });
+
+      if (!response.ok) {
+        console.error("[useWatchSession] Sink rejected:", await response.text());
+        return;
+      }
+
+      totalOwedRef.current = BigInt(0);
+      await refetchNonce();
+    } catch (err) {
+      console.error("[useWatchSession] Flush failed, carrying forward:", err);
+    }
+  }, [userAddress, creatorAddress, signTypedDataAsync, refetchNonce]);
+
+  // ── Billing tick loop — keyed to videoId so track changes restart cleanly ──
   useEffect(() => {
-    trackerRef.current = new WatchSessionTracker({
-      getIsPlaying: () => isPlayingRef.current,
-      getIsBuffering: () => isBufferingRef.current,
-      getFreeSecondsRemaining: () => remainingRef.current,
-      consumeFreeSecond: () => consumeSecond(),
-      onSecondTick: (billableSeconds, freeSecondsRemaining) => {
-        totalSecondsRef.current += 1;
-        setLive({
-          isActive: true,
-          isPaused: false,
-          billableSeconds,
-          totalSeconds: totalSecondsRef.current,
-          currentCost: billableSeconds * PRICE_PER_SECOND_USDC,
-        });
-        if (freeSecondsRemaining === 0) setFreeTimeExhausted(true);
-      },
-      onFreeTimeExhausted: () => setFreeTimeExhausted(true),
-      onSessionEnd,
-      persistPendingSession: true,
-    });
+    totalOwedRef.current       = BigInt(0);
+    accumulatedSeconds.current = 0;
+    lastTickRef.current        = null;
+
+    tickerRef.current = setInterval(() => {
+      if (!shouldBill()) {
+        lastTickRef.current = null;
+        return;
+      }
+
+      const now = performance.now();
+      if (lastTickRef.current !== null) {
+        const elapsedMs      = now - lastTickRef.current;
+        const billedSeconds  = Math.floor(elapsedMs / 1000);
+
+        if (billedSeconds > 0) {
+          totalOwedRef.current       += BigInt(billedSeconds) * PROTOCOL.MICRO_USDC_PER_SECOND;
+          accumulatedSeconds.current += billedSeconds;
+        }
+      }
+      lastTickRef.current = now;
+
+      if (accumulatedSeconds.current >= PROTOCOL.FLUSH_INTERVAL_SECONDS) {
+        accumulatedSeconds.current = 0;
+        flushVoucher();
+      }
+    }, 1_000);
 
     return () => {
-      trackerRef.current?.stop("navigate");
+      if (tickerRef.current) clearInterval(tickerRef.current);
+      flushVoucher();
     };
-  }, [consumeSecond, onSessionEnd, setLive]);
+  }, [videoId, shouldBill, flushVoucher]);
 
-  const api = useMemo(
-    () => ({
-      startSession: () => {
-        setFreeTimeExhausted(false);
-        trackerRef.current?.start();
-      },
-      stopSession: (reason: "pause" | "end" | "navigate" | "tab_hidden") => {
-        trackerRef.current?.stop(reason);
-      },
-      resetSession: () => {
-        totalSecondsRef.current = 0;
-        trackerRef.current?.reset();
-        reset();
-      },
-      setPlaying: (value: boolean) => setIsPlaying(value),
-      setBuffering: (value: boolean) => setIsBuffering(value),
-      freeTimeExhausted,
-      retryPendingFound,
-      dismissPendingRetry: () => {
-        localStorage.removeItem(pendingSessionStorageKey);
-        setRetryPendingFound(false);
-      },
-    }),
-    [freeTimeExhausted, reset, retryPendingFound],
-  );
+  // ── Tab visibility flush ───────────────────────────────────────────────────
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden) {
+        lastTickRef.current = null;
+        flushVoucher();
+      }
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [flushVoucher]);
 
-  return api;
+  // ── Page unload flush (sendBeacon fallback for beforeunload reliability) ───
+  useEffect(() => {
+    const onBeforeUnload = () => {
+      if (totalOwedRef.current === BigInt(0) || !userAddress || nonceRef.current === undefined) return;
+      navigator.sendBeacon("/api/vouchers/beacon", JSON.stringify({
+        user:      userAddress,
+        creator:   creatorAddress,
+        totalOwed: totalOwedRef.current.toString(),
+        nonce:     nonceRef.current.toString(),
+      }));
+    };
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [userAddress, creatorAddress]);
+
+  return { unsignedVoucher, resignLoading, handleResign, dismissUnsigned };
 }

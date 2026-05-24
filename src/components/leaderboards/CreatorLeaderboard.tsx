@@ -16,7 +16,7 @@ export function CreatorLeaderboard({ rows }: { rows: CreatorRow[] }) {
             <th>Creator</th>
             <th>Earnings USDC</th>
             <th>Paid Seconds</th>
-            <th>Followers</th>
+            <th>Supporters</th>
           </tr>
         </thead>
         <tbody>

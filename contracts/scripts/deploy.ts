@@ -1,41 +1,36 @@
-import hre from "hardhat";
+import pkg from "hardhat";
+const { ethers } = pkg;
+import * as fs from "fs";
+import { fileURLToPath } from "url";
+import * as path from "path";
 
 async function main() {
-  const { ethers } = hre;
-  const [deployer] = await ethers.getSigners();
-  console.log("Deploying on X Layer testnet from:", deployer.address);
+  const usdc           = process.env.USDC_ADDRESS;
+  const treasury       = process.env.TREASURY_ADDRESS;
+  const fanRewardsPool = process.env.FAN_REWARDS_ADDRESS;
+  const settler        = process.env.SETTLER_ADDRESS;
 
-  const MockUSDC = await ethers.getContractFactory("MockUSDC");
-  const usdc = await MockUSDC.deploy(deployer.address);
-  await usdc.waitForDeployment();
-  console.log("MockUSDC deployed:", await usdc.getAddress());
+  if (!usdc || !treasury || !fanRewardsPool || !settler) {
+    throw new Error(
+      "Missing required env vars: USDC_ADDRESS, TREASURY_ADDRESS, FAN_REWARDS_ADDRESS, SETTLER_ADDRESS"
+    );
+  }
 
-  const PRICE_PER_SECOND = 1000n;
-  const RoarVault = await ethers.getContractFactory("RoarVault");
-  const vault = await RoarVault.deploy(
-    await usdc.getAddress(),
-    deployer.address,
-    PRICE_PER_SECOND,
-    deployer.address,
-  );
+  const Vault = await ethers.getContractFactory("RoarballVault");
+  const vault = await Vault.deploy(usdc, treasury, fanRewardsPool, settler);
   await vault.waitForDeployment();
-  console.log("RoarVault deployed:", await vault.getAddress());
 
-  const RoarBadges = await ethers.getContractFactory("RoarBadges");
-  const badges = await RoarBadges.deploy(
-    "https://roar.app/api/badges/metadata/",
-    deployer.address,
+  const address = await vault.getAddress();
+  console.log(`RoarballVault deployed: ${address}`);
+
+  const dirname = path.dirname(fileURLToPath(import.meta.url));
+  const outDir = path.join(dirname, "../deployments");
+  if (!fs.existsSync(outDir)) fs.mkdirSync(outDir, { recursive: true });
+
+  fs.writeFileSync(
+    path.join(outDir, "xlayer-testnet.json"),
+    JSON.stringify({ RoarballVault: address, deployedAt: new Date().toISOString() }, null, 2)
   );
-  await badges.waitForDeployment();
-  console.log("RoarBadges deployed:", await badges.getAddress());
-
-  await vault.setSettler(deployer.address, true);
-  await badges.setMinter(deployer.address, true);
-
-  console.log("\n✅ Add these to .env.local:");
-  console.log(`NEXT_PUBLIC_USDC_ADDRESS=${await usdc.getAddress()}`);
-  console.log(`NEXT_PUBLIC_PAYMENT_CONTRACT_ADDRESS=${await vault.getAddress()}`);
-  console.log(`NEXT_PUBLIC_BADGE_CONTRACT_ADDRESS=${await badges.getAddress()}`);
 }
 
-main().catch(console.error);
+main().catch((e) => { console.error(e); process.exit(1); });

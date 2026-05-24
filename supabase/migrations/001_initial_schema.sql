@@ -11,6 +11,7 @@ create table profiles (
   country_name text not null,
   country_locked boolean not null default false,
   cumulative_free_seconds_used integer not null default 0,
+  total_earned numeric(20,6) not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -88,11 +89,12 @@ create table user_badges (
   unique(profile_id, badge_id)
 );
 
-create table comments (
+create table match_takes (
   id uuid primary key default uuid_generate_v4(),
   video_id uuid references videos(id) on delete cascade,
-  profile_id uuid references profiles(id),
-  content text not null,
+  author_id uuid references profiles(id),
+  body text not null,
+  tag text not null default 'Banter' check (tag in ('Tactical', 'Banter', 'Hot Take', 'Disagree')),
   created_at timestamptz not null default now()
 );
 
@@ -146,49 +148,109 @@ create table platform_stats (
 );
 insert into platform_stats (id) values (1) on conflict do nothing;
 
+CREATE TABLE IF NOT EXISTS vouchers (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_address     TEXT NOT NULL,
+  creator_address  TEXT NOT NULL,
+  total_owed       NUMERIC(20, 0) NOT NULL,
+  nonce            NUMERIC(20, 0) NOT NULL,
+  signature        TEXT NOT NULL,
+  status           TEXT NOT NULL DEFAULT 'pending'
+                   CHECK (status IN ('unsigned', 'pending', 'settled', 'failed')),
+  tx_hash          TEXT,
+  settled_at       TIMESTAMPTZ,
+  created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+  UNIQUE (user_address, nonce)
+);
+
 alter table profiles enable row level security;
 alter table videos enable row level security;
 alter table watch_sessions enable row level security;
 alter table balances enable row level security;
-alter table comments enable row level security;
+alter table match_takes enable row level security;
 alter table reactions enable row level security;
 alter table follows enable row level security;
 alter table saved_videos enable row level security;
 alter table reports enable row level security;
+alter table countries enable row level security;
+alter table badges enable row level security;
+alter table user_badges enable row level security;
+alter table platform_stats enable row level security;
+alter table vouchers enable row level security;
 
 create policy "public read profiles" on profiles for select using (true);
 create policy "public read videos" on videos for select using (status = 'active');
-create policy "public read comments" on comments for select using (true);
+create policy "public read match_takes" on match_takes for select using (true);
+create policy "public insert match_takes" on match_takes for insert with check (true);
 create policy "public read reactions" on reactions for select using (true);
 create policy "public read countries" on countries for select using (true);
 create policy "public read badges" on badges for select using (true);
 create policy "public read user_badges" on user_badges for select using (true);
 create policy "public read leaderboard stats" on platform_stats for select using (true);
 
+CREATE POLICY "service_role_vouchers" ON vouchers
+  FOR ALL USING (auth.role() = 'service_role');
+
+-- DEMO FIXTURES ONLY: Remove this block before public launch
+-- BEGIN COUNTRY SEED
 insert into countries values
-  ('NG','Nigeria','🇳🇬','#008751','#FFFFFF','#00C853'),
-  ('BR','Brazil','🇧🇷','#009C3B','#FFDF00','#002776'),
-  ('AR','Argentina','🇦🇷','#74ACDF','#FFFFFF','#F6B40E'),
-  ('FR','France','🇫🇷','#002395','#FFFFFF','#ED2939'),
-  ('MA','Morocco','🇲🇦','#C1272D','#006233','#FFD700'),
-  ('GH','Ghana','🇬🇭','#006B3F','#FCD116','#CE1126'),
-  ('EN','England','🏴','#FFFFFF','#CF091D','#012169'),
+  ('DE','Germany','🇩🇪','#000000','#FFCE00','#FFCE00'),
+  ('ES','Spain','🇪🇸','#AA151B','#AA151B','#F1BF00'),
+  ('FR','France','🇫🇷','#002395','#ED2939','#ED2939'),
   ('PT','Portugal','🇵🇹','#006600','#FF0000','#FFD700'),
-  ('ES','Spain','🇪🇸','#AA151B','#F1BF00','#AA151B'),
-  ('DE','Germany','🇩🇪','#000000','#DD0000','#FFCE00'),
-  ('US','USA','🇺🇸','#002868','#BF0A30','#FFFFFF'),
-  ('MX','Mexico','🇲🇽','#006847','#FFFFFF','#CE1126'),
-  ('JP','Japan','🇯🇵','#FFFFFF','#BC002D','#FFFFFF'),
-  ('KR','South Korea','🇰🇷','#FFFFFF','#003478','#CD2E3A'),
-  ('SN','Senegal','🇸🇳','#00853F','#FDEF42','#E31B23'),
-  ('CM','Cameroon','🇨🇲','#007A5E','#CE1126','#FCD116');
+  ('NL','Netherlands','🇳🇱','#AE1C28','#21468B','#FF4F00'),
+  ('BE','Belgium','🇧🇪','#000000','#EF3340','#EF3340'),
+  ('EN','England','🏴','#FFFFFF','#FFFFFF','#CF0820'),
+  ('HR','Croatia','🇭🇷','#FF0000','#171796','#FF0000'),
+  ('AT','Austria','🇦🇹','#ED2939','#ED2939','#ED2939'),
+  ('HU','Hungary','🇭🇺','#CE1126','#477050','#CE1126'),
+  ('CH','Switzerland','🇨🇭','#FF0000','#FF0000','#FF0000'),
+  ('RS','Serbia','🇷🇸','#C6363C','#FFFFFF','#D4A373'),
+  ('DK','Denmark','🇩🇰','#C8102E','#C8102E','#C8102E'),
+  ('SK','Slovakia','🇸🇰','#FFFFFF','#EE1C25','#EE1C25'),
+  ('AL','Albania','🇦🇱','#E41B13','#E41B13','#E41B13'),
+  ('GR','Greece','🇬🇷','#0D5EAF','#0D5EAF','#0D5EAF'),
+  ('AR','Argentina','🇦🇷','#74ACDF','#74ACDF','#F6B40E'),
+  ('BR','Brazil','🇧🇷','#009C3B','#002776','#FFDF00'),
+  ('CO','Colombia','🇨🇴','#FCD116','#CE1126','#FCD116'),
+  ('UY','Uruguay','🇺🇾','#0081C6','#FCD116','#FCD116'),
+  ('EC','Ecuador','🇪🇨','#FFD700','#DA291C','#FFD700'),
+  ('VE','Venezuela','🇻🇪','#FCD116','#CE1126','#FCD116'),
+  ('US','United States','🇺🇸','#B22234','#3C3B6E','#B22234'),
+  ('MX','Mexico','🇲🇽','#006847','#CE1126','#006847'),
+  ('CA','Canada','🇨🇦','#FF0000','#FF0000','#FF0000'),
+  ('PA','Panama','🇵🇦','#002F6C','#D21034','#D21034'),
+  ('HN','Honduras','🇭🇳','#0073CF','#0073CF','#0073CF'),
+  ('JM','Jamaica','🇯🇲','#009B3A','#FCD116','#FCD116'),
+  ('MA','Morocco','🇲🇦','#C1272D','#C1272D','#006233'),
+  ('EG','Egypt','🇪🇬','#CE1126','#000000','#C09300'),
+  ('SN','Senegal','🇸🇳','#00853F','#E31B23','#FDEF42'),
+  ('ZA','South Africa','🇿🇦','#007A4D','#000000','#FFB612'),
+  ('CI','Côte d''Ivoire','🇨🇮','#FF8200','#009A44','#FF8200'),
+  ('GH','Ghana','🇬🇭','#CE1126','#006B3F','#FCD116'),
+  ('TN','Tunisia','🇹🇳','#E41B13','#E41B13','#E41B13'),
+  ('ML','Mali','🇲🇱','#14B53A','#E51D28','#FED105'),
+  ('DZ','Algeria','🇩🇿','#006233','#D21034','#D21034'),
+  ('JP','Japan','🇯🇵','#BC002D','#BC002D','#BC002D'),
+  ('KR','South Korea','🇰🇷','#FFFFFF','#CD2E3A','#CD2E3A'),
+  ('IR','Iran','🇮🇷','#239F40','#DA251D','#239F40'),
+  ('SA','Saudi Arabia','🇸🇦','#006C35','#006C35','#006C35'),
+  ('AU','Australia','🇦🇺','#00008B','#FFFFFF','#FFD700'),
+  ('UZ','Uzbekistan','🇺🇿','#00AEF0','#1EB53A','#00AEF0'),
+  ('QA','Qatar','🇶🇦','#8A1538','#8A1538','#8A1538'),
+  ('JO','Jordan','🇯🇴','#000000','#1A9345','#E60000'),
+  ('NZ','New Zealand','🇳🇿','#000000','#000000','#FFFFFF'),
+  ('TBD_A','Intercontinental Playoff A','🏳️','#4B5563','#9CA3AF','#FFFFFF'),
+  ('TBD_B','Intercontinental Playoff B','🏳️','#4B5563','#9CA3AF','#FFFFFF');
+-- END COUNTRY SEED
 
 insert into badges (slug,name,description,requirement_type,requirement_value,icon,contract_badge_id) values
-  ('first_roar','First Roar','You watched your first video on Roar','videos_watched',1,'🏆',1),
+  ('first_roar','First Roarball','You watched your first video on Roarball','videos_watched',1,'🏆',1),
   ('first_upload','First Upload','You entered the pitch and uploaded your first video','videos_uploaded',1,'⚽',2),
   ('matchday_viewer','Matchday Viewer','Watched a matchday-tagged video','matchday_watch',1,'📅',3),
-  ('10_min_fan','10-Minute Fan','Watched 10 total minutes on Roar','total_watch_minutes',10,'⏱️',4),
-  ('30_min_fan','30-Minute Fan','Watched 30 total minutes on Roar','total_watch_minutes',30,'🎽',5),
+  ('10_min_fan','10-Minute Fan','Watched 10 total minutes on Roarball','total_watch_minutes',10,'⏱️',4),
+  ('30_min_fan','30-Minute Fan','Watched 30 total minutes on Roarball','total_watch_minutes',30,'🎽',5),
   ('90_min_fan','90-Minute Fan','Watched a full 90 minutes — true fan','total_watch_minutes',90,'🥇',6),
   ('country_loyalist','Country Loyalist','Followed your chosen country feed','country_follow',1,'🌍',7),
   ('creator_supporter','Creator Supporter','Watched 5 minutes from a single creator','creator_watch_minutes',5,'🤝',8),
@@ -197,16 +259,16 @@ insert into badges (slug,name,description,requirement_type,requirement_value,ico
   ('hot_take_merchant','Hot Take Merchant','Used Hot Take reaction 10 times','hot_take_reactions',10,'🌶️',11),
   ('early_member','Early Stadium Member','Joined during the Global Cup Festival launch period','signup_during_hackathon',1,'⭐',12);
 
-insert into profiles (id,wallet_address,display_name,handle,bio,country_code,country_name,country_locked,cumulative_free_seconds_used) values
-  ('11111111-0000-0000-0000-000000000001','0x0000000000000000000000000000000000000001','Tactical Ghost','TacticalGhost','Breaking down football systems one frame at a time.','FR','France',true,0),
-  ('11111111-0000-0000-0000-000000000002','0x0000000000000000000000000000000000000002','Pitch Lens','PitchLens','Film room analysis for football nerds worldwide.','DE','Germany',true,0),
-  ('11111111-0000-0000-0000-000000000003','0x0000000000000000000000000000000000000003','Naija Stand','NaijaStand','Nigeria to the world. Super Eagles forever.','NG','Nigeria',true,0),
-  ('11111111-0000-0000-0000-000000000004','0x0000000000000000000000000000000000000004','Copa Mind','CopaMind','Argentina hearts. Tactical brilliance. Football poetry.','AR','Argentina',true,0),
-  ('11111111-0000-0000-0000-000000000005','0x0000000000000000000000000000000000000005','Fan Zone HQ','FanZoneHQ','The fans perspective. Every match. Every emotion.','BR','Brazil',true,0),
-  ('11111111-0000-0000-0000-000000000006','0x0000000000000000000000000000000000000006','Matchday Musa','MatchdayMusa','Matchday coverage from the stands. Pure atmosphere.','NG','Nigeria',true,0);
+insert into profiles (id,wallet_address,display_name,handle,bio,country_code,country_name,country_locked,cumulative_free_seconds_used,total_earned) values
+  ('11111111-0000-0000-0000-000000000001','0x0000000000000000000000000000000000000001','Tactical Ghost','TacticalGhost','Breaking down football systems one frame at a time.','FR','France',true,0,0),
+  ('11111111-0000-0000-0000-000000000002','0x0000000000000000000000000000000000000002','Pitch Lens','PitchLens','Film room analysis for football nerds worldwide.','DE','Germany',true,0,0),
+  ('11111111-0000-0000-0000-000000000003','0x0000000000000000000000000000000000000003','Ghana Stand','GhanaStand','Ghana to the world. Black Stars forever.','GH','Ghana',true,0,0),
+  ('11111111-0000-0000-0000-000000000004','0x0000000000000000000000000000000000000004','Copa Mind','CopaMind','Argentina hearts. Tactical brilliance. Football poetry.','AR','Argentina',true,0,0),
+  ('11111111-0000-0000-0000-000000000005','0x0000000000000000000000000000000000000005','Fan Zone HQ','FanZoneHQ','The fans perspective. Every match. Every emotion.','BR','Brazil',true,0,0),
+  ('11111111-0000-0000-0000-000000000006','0x0000000000000000000000000000000000000006','Matchday Kofi','MatchdayKofi','Matchday coverage from the stands. Pure atmosphere.','GH','Ghana',true,0,0);
 
 insert into videos (id,owner_profile_id,title,description,video_url,thumbnail_url,duration_seconds,category,country_tags,content_type,status,total_watch_seconds,total_billable_seconds) values
-  ('aaaaaaaa-0000-0000-0000-000000000001','11111111-0000-0000-0000-000000000003','Nigeria vs Brazil: The Midfield Battle','A deep dive into the midfield chess match. NaijaStand breaks down every press, every interception.','https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4','https://picsum.photos/seed/ngbr/640/360',847,'Tactical Breakdowns',ARRAY['NG','BR'],'long','active',12400,8200),
+  ('aaaaaaaa-0000-0000-0000-000000000001','11111111-0000-0000-0000-000000000003','Ghana vs Brazil: The Midfield Battle','A deep dive into the midfield chess match. GhanaStand breaks down every press, every interception.','https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4','https://picsum.photos/seed/ngbr/640/360',847,'Tactical Breakdowns',ARRAY['GH','BR'],'long','active',12400,8200),
   ('aaaaaaaa-0000-0000-0000-000000000002','11111111-0000-0000-0000-000000000001','Argentina Pressing Shape Explained','Frame-by-frame breakdown of how Argentina suffocate possession. Pure tactical cinema.','https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4','https://picsum.photos/seed/arpress/640/360',612,'Tactical Breakdowns',ARRAY['AR'],'long','active',9800,6500),
   ('aaaaaaaa-0000-0000-0000-000000000003','11111111-0000-0000-0000-000000000002','Morocco Low Block Masterclass','Atlas Lions defend with discipline. Here is exactly why it works against any attack.','https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4','https://picsum.photos/seed/mablock/640/360',540,'Tactical Breakdowns',ARRAY['MA'],'long','active',7200,4900),
   ('aaaaaaaa-0000-0000-0000-000000000005','11111111-0000-0000-0000-000000000003','England Fans After the Final Whistle','Pure emotion. Raw fan footage from the stands after a dramatic equalizer. History made.','https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4','https://picsum.photos/seed/enfans/640/360',92,'Fan Reactions',ARRAY['EN'],'short','active',15600,11200),

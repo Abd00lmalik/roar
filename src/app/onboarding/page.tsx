@@ -16,7 +16,7 @@ export default function OnboardingPage() {
     <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-8">
       <h1 className="font-display text-4xl font-bold">Choose Your Country</h1>
       <CountryPicker selected={countryCode} onSelect={setCountry} />
-      <h2 className="font-display text-2xl font-semibold">Your Profile</h2>
+      <h2 className="font-display text-2xl font-semibold">Fan Passport 🛂</h2>
       <ProfileForm
         countryCode={countryCode}
         onSubmit={() => {

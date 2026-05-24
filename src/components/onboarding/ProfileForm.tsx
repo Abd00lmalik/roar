@@ -19,14 +19,13 @@ export function ProfileForm({ countryCode, onSubmit }: Props) {
     [displayName],
   );
 
+  const handleSave = () => {
+    if (!countryCode || !displayName) return;
+    onSubmit({ displayName, handle: handle || autoHandle, bio });
+  };
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSubmit({ displayName, handle: handle || autoHandle, bio });
-      }}
-      className="glass-panel space-y-3 p-4"
-    >
+    <div className="glass-panel space-y-3 p-4">
       <p className="text-xs text-amber-200">
         ⚠️ Your country is locked for this tournament season. Choose wisely.
       </p>
@@ -50,7 +49,9 @@ export function ProfileForm({ countryCode, onSubmit }: Props) {
         value={bio}
         onChange={(e) => setBio(e.target.value)}
       />
-      <FootballButton disabled={!countryCode || !displayName}>Enter the Stadium</FootballButton>
-    </form>
+      <FootballButton disabled={!countryCode || !displayName} onClick={handleSave}>
+        Enter the Stadium
+      </FootballButton>
+    </div>
   );
 }

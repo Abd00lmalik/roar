@@ -24,7 +24,7 @@ const connectors = connectorsForWallets(
     },
   ],
   {
-    appName: "Roar",
+    appName: "Roarball",
     projectId: walletConnectProjectId,
     appDescription: "Where football attention becomes creator revenue.",
     appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",

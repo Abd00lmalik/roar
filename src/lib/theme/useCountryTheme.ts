@@ -12,8 +12,12 @@ export function useCountryTheme() {
     const country = COUNTRY_MAP.get(countryCode);
     if (!country) return;
 
-    document.documentElement.style.setProperty("--country-from", country.gradientFrom);
-    document.documentElement.style.setProperty("--country-to", country.gradientTo);
-    document.documentElement.style.setProperty("--country-accent", country.accent);
+    const root = document.documentElement;
+    root.style.setProperty("--country-from",   country.gradientFrom);
+    root.style.setProperty("--country-via",    country.gradientVia);
+    root.style.setProperty("--country-to",     country.gradientTo);
+    root.style.setProperty("--country-accent", country.accent);
+
+    document.cookie = `supporter_nation=${country.code}; path=/; max-age=31536000; SameSite=Lax`;
   }, [countryCode]);
 }

@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { createCloudflareDirectUpload } from "@/lib/video/cloudflare";
-import { mockCloudflareUpload, MOCK_VIDEO_URL } from "@/lib/video/mock";
 
 export async function POST() {
+  const accountId = process.env.CLOUDFLARE_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_STREAM_TOKEN ?? process.env.CLOUDFLARE_STREAM_API_TOKEN;
+
+  if (!accountId || !token) {
+    return NextResponse.json(
+      { error: "Video upload not configured" },
+      { status: 503 }
+    );
+  }
+
   try {
     const directUpload = await createCloudflareDirectUpload();
     if (directUpload) {
@@ -12,16 +21,14 @@ export async function POST() {
         uploadURL: directUpload.uploadURL,
       });
     }
-  } catch {
-    // Fallback handled below.
+    return NextResponse.json(
+      { error: "Video upload not configured" },
+      { status: 503 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: "Video upload initiation failed" },
+      { status: 500 }
+    );
   }
-
-  const mock = mockCloudflareUpload();
-  console.warn("MOCK MODE: Cloudflare not configured");
-  return NextResponse.json({
-    mode: "mock",
-    uid: mock.uid,
-    uploadURL: mock.uploadURL,
-    video_url: MOCK_VIDEO_URL,
-  });
 }
