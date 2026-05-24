@@ -2,7 +2,7 @@
 
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { useBadges } from "@/hooks/useBadges";
-import { PassportHeader } from "@/components/passport/PassportHeader";
+import { DualStatsPassport } from "@/components/passport/DualStatsPassport";
 import { BadgeGrid } from "@/components/passport/BadgeGrid";
 import { WatchHistory } from "@/components/passport/WatchHistory";
 import { ShareCard } from "@/components/passport/ShareCard";
@@ -13,7 +13,7 @@ export default function PassportPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-6">
-      <PassportHeader profile={profile} />
+      <DualStatsPassport profile={profile} />
       <div className="grid gap-4 lg:grid-cols-2">
         <ShareCard profile={profile} badgesCount={badges?.length || 0} />
         <WatchHistory profileId={profile?.id} />

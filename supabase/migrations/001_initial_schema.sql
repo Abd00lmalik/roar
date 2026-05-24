@@ -11,7 +11,7 @@ create table profiles (
   country_name text not null,
   country_locked boolean not null default false,
   cumulative_free_seconds_used integer not null default 0,
-  total_earned numeric(20,6) not null default 0,
+  total_earned numeric(20,0) not null default 0,
   created_at timestamptz not null default now()
 );
 

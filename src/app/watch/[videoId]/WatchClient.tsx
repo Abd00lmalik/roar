@@ -136,7 +136,7 @@ export function WatchClient({ video }: WatchClientProps) {
         </div>
         {isOwner && (
           <div className="bg-amber-500/20 text-amber-300 p-2 text-xs rounded text-center font-mono">
-            ⚠️ You can&apos;t bill yourself for your own content. Billing disabled.
+            You created this video — watching your own content is free.
           </div>
         )}
         <ReactionBar />
