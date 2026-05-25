@@ -1,6 +1,7 @@
 "use client";
 
 import { ReactNode, useMemo } from "react";
+import { SessionProvider } from "next-auth/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RainbowKitProvider, darkTheme, connectorsForWallets } from "@rainbow-me/rainbowkit";
 import { okxWallet, metaMaskWallet, walletConnectWallet } from "@rainbow-me/rainbowkit/wallets";
@@ -51,12 +52,14 @@ export function AppProviders({ children }: { children: ReactNode }) {
   const queryClient = useMemo(() => new QueryClient(), []);
 
   return (
-    <WagmiProvider config={wagmiConfig}>
-      <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider theme={darkTheme()} modalSize="compact">
-          <ThemeBridge>{children}</ThemeBridge>
-        </RainbowKitProvider>
-      </QueryClientProvider>
-    </WagmiProvider>
+    <SessionProvider>
+      <WagmiProvider config={wagmiConfig}>
+        <QueryClientProvider client={queryClient}>
+          <RainbowKitProvider theme={darkTheme()} modalSize="compact">
+            <ThemeBridge>{children}</ThemeBridge>
+          </RainbowKitProvider>
+        </QueryClientProvider>
+      </WagmiProvider>
+    </SessionProvider>
   );
 }
