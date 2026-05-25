@@ -9,6 +9,7 @@ export function StadiumBackground() {
     <div className="absolute inset-0 w-full h-full overflow-hidden">
       {/* Real video - hidden until correct file is dropped in */}
       <video
+        id="stadium-bg-video"
         className="absolute inset-0 w-full h-full object-cover"
         src="/videos/stadium-bg.mp4"
         autoPlay

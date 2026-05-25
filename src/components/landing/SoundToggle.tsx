@@ -1,60 +1,49 @@
-"use client";
+﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 export function SoundToggle() {
   const [active, setActive] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const toggle = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio("/audio/stadium-atmosphere.mp3");
-      audioRef.current.loop   = true;
-      audioRef.current.volume = 0.25;
-    }
+  const toggle = async () => {
+    const video = document.getElementById("stadium-bg-video") as HTMLVideoElement | null;
+    if (!video) return;
 
     if (active) {
-      // Fade out smoothly
-      const fade = setInterval(() => {
-        if (!audioRef.current) return clearInterval(fade);
-        if (audioRef.current.volume > 0.02) {
-          audioRef.current.volume -= 0.02;
-        } else {
-          audioRef.current.pause();
-          audioRef.current.volume = 0.25;
-          clearInterval(fade);
-        }
-      }, 50);
-    } else {
-      audioRef.current.volume = 0;
-      audioRef.current.play().catch(() => {});
-      // Fade in
-      const fade = setInterval(() => {
-        if (!audioRef.current) return clearInterval(fade);
-        if (audioRef.current.volume < 0.25) {
-          audioRef.current.volume = Math.min(audioRef.current.volume + 0.02, 0.25);
-        } else {
-          clearInterval(fade);
-        }
-      }, 50);
+      video.muted = true;
+      video.volume = 0;
+      setActive(false);
+      return;
     }
-    setActive(!active);
+
+    video.muted = false;
+    video.volume = 1;
+    try {
+      await video.play();
+      setActive(true);
+    } catch {
+      video.muted = true;
+      setActive(false);
+    }
   };
 
   useEffect(() => {
-    return () => {
-      audioRef.current?.pause();
-      audioRef.current = null;
-    };
+    const video = document.getElementById("stadium-bg-video") as HTMLVideoElement | null;
+    if (video) {
+      video.muted = true;
+      video.volume = 0;
+    }
   }, []);
 
   return (
     <button
-      onClick={toggle}
-      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-xl bg-white/[0.03] border border-white/[0.08] text-white text-xs font-medium hover:bg-white/[0.08] transition-colors"
+      onClick={() => {
+        void toggle();
+      }}
+      className="fixed bottom-6 right-6 z-50 flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-2 text-xs font-medium text-white backdrop-blur-xl transition-colors hover:bg-white/[0.08]"
     >
       <span>{active ? "🔊" : "🔇"}</span>
-      <span>{active ? "MUTE STADIUM" : "ENABLE STADIUM SOUND"}</span>
+      <span>{active ? "MUTE VIDEO" : "ENABLE VIDEO SOUND"}</span>
     </button>
   );
 }
