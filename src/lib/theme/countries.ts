@@ -74,3 +74,4 @@ export const COUNTRIES: CountryConfig[] = [
 ];
 
 export const COUNTRY_MAP = new Map(COUNTRIES.map((country) => [country.code, country]));
+export const WC2026_QUALIFIERS = COUNTRIES;
