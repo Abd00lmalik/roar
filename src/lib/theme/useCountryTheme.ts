@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import { COUNTRY_MAP } from "@/lib/theme/countries";
@@ -17,7 +17,19 @@ export function useCountryTheme() {
     root.style.setProperty("--country-via", country.gradientVia);
     root.style.setProperty("--country-to", country.gradientTo);
     root.style.setProperty("--country-accent", country.accent);
+
+    const payload = encodeURIComponent(
+      JSON.stringify({
+        from: country.gradientFrom,
+        via: country.gradientVia,
+        to: country.gradientTo,
+        accent: country.accent,
+      }),
+    );
+
     document.cookie = `supporter_nation=${country.code}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `roar_theme=${payload}; path=/; max-age=31536000; SameSite=Lax`;
+
     if (syncStore) {
       setCountryCode(country.code);
     }
