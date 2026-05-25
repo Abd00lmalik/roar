@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
       ...(config.resolve.alias ?? {}),
       "@react-native-async-storage/async-storage": false,
       "pino-pretty": false,
+      "@solana-program/token": false,
+      "@solana/rpc-api": false,
     };
     return config;
   },
