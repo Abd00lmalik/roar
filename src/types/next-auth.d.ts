@@ -2,8 +2,13 @@ import "next-auth";
 import "next-auth/jwt";
 
 /**
- * Extend the built-in NextAuth types so TypeScript knows about the `id` field
- * we inject in the session callback (sourced from the JWT `sub`).
+ * NextAuth type augmentation for Roarball.
+ *
+ * Extends the base Session and JWT types to expose:
+ *   - user.id            — Google sub / Supabase user UUID
+ *   - user.walletAddress — Circle-provisioned EOA wallet address
+ *   - user.circleWalletId — Circle internal wallet ID (for balance queries)
+ *   - user.displayName   — display name from Google profile
  */
 declare module "next-auth" {
   interface User {
@@ -11,7 +16,12 @@ declare module "next-auth" {
   }
 
   interface Session {
-    user: User & {
+    user: {
+      id: string;
+      walletAddress: string | null;
+      circleWalletId: string | null;
+      displayName: string | null;
+      // Standard fields
       name?: string | null;
       email?: string | null;
       image?: string | null;
@@ -21,6 +31,10 @@ declare module "next-auth" {
 
 declare module "next-auth/jwt" {
   interface JWT {
-    sub: string;
+    userId?: string;
+    sub?: string;
+    walletAddress?: string | null;
+    circleWalletId?: string | null;
+    displayName?: string | null;
   }
 }
