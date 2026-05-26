@@ -5,6 +5,7 @@ import "./globals.css";
 import { AppProviders } from "@/components/providers/AppProviders";
 import { Navbar } from "@/components/layout/Navbar";
 import { BottomNav } from "@/components/layout/BottomNav";
+import { ThemeRestore } from "@/components/providers/ThemeRestore";
 
 const display = Barlow_Condensed({
   variable: "--font-display",
@@ -113,6 +114,7 @@ export default function RootLayout({
       <body className="min-h-full bg-[#0a0a0f] text-chalk">
         <div className="stadium-floodlight min-h-screen">
           <AppProviders>
+            <ThemeRestore />
             <div className="min-h-screen pb-16 md:pb-0">
               <Navbar />
               <main>{children}</main>

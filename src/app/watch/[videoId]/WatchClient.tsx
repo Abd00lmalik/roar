@@ -62,6 +62,7 @@ export function WatchClient({ video }: WatchClientProps) {
   const walletAddress = session?.user?.walletAddress ?? null;
   const isOwner =
     session?.user?.id && video.profiles?.id === session.user.id;
+  const isPaid = video.is_paid !== false;
 
   // ── Billing loop ───────────────────────────────────────────────────────────
   const startBillingLoop = useCallback(() => {
@@ -130,7 +131,7 @@ export function WatchClient({ video }: WatchClientProps) {
 
   // ── Free window countdown ───────────────────────────────────────────────────
   useEffect(() => {
-    if (!videoElement || isOwner) return;
+    if (!videoElement || isOwner || !isPaid) return;
 
     const freeInterval = setInterval(() => {
       if (videoElement.paused || document.hidden || videoElement.readyState < 3) return;
@@ -139,7 +140,7 @@ export function WatchClient({ video }: WatchClientProps) {
         if (prev <= 1) {
           clearInterval(freeInterval);
           // Free time expired — start billing loop
-          if (!isOwner && session?.user?.id) {
+          if (!isOwner && isPaid && session?.user?.id) {
             startBillingLoop();
           } else if (!session?.user?.id) {
             // Not signed in — show funding modal
@@ -154,15 +155,15 @@ export function WatchClient({ video }: WatchClientProps) {
     }, 1_000);
 
     return () => clearInterval(freeInterval);
-  }, [videoElement, isOwner, session?.user?.id, startBillingLoop]);
+  }, [videoElement, isOwner, isPaid, session?.user?.id, startBillingLoop]);
 
   // Start billing immediately if free time was already consumed (e.g. page reload)
   useEffect(() => {
-    if (freeSecondsLeft <= 0 && !isOwner && videoElement && session?.user?.id) {
+    if (freeSecondsLeft <= 0 && !isOwner && isPaid && videoElement && session?.user?.id) {
       startBillingLoop();
     }
     return stopBillingLoop;
-  }, [freeSecondsLeft, isOwner, videoElement, session?.user?.id, startBillingLoop, stopBillingLoop]);
+  }, [freeSecondsLeft, isOwner, isPaid, videoElement, session?.user?.id, startBillingLoop, stopBillingLoop]);
 
   // ── Resume stream after funding ─────────────────────────────────────────────
   const handleFundingSuccess = useCallback(() => {

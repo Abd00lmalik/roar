@@ -1,27 +1,104 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FootballButton } from "@/components/shared/FootballButton";
 import { useAccount } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useSession } from "next-auth/react";
+import { xLayerPublicClient } from "@/lib/xlayer/client";
+import { COUNTRIES } from "@/lib/theme/countries";
+import { formatEther } from "viem";
 
 export default function UploadPage() {
-  const { isConnected } = useAccount();
+  const { isConnected, address: connectedAddress } = useAccount();
+  const { data: session } = useSession();
   const router = useRouter();
+
+  // File & Form state
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("Match Previews");
+  const [category, setCategory] = useState("");
+  const [tagsInput, setTagsInput] = useState("");
+  const [associatedCountry, setAssociatedCountry] = useState("");
+  
+  // Loading & Balance state
   const [loading, setLoading] = useState(false);
+  const [checkingBalance, setCheckingBalance] = useState(true);
+  const [okbBalance, setOkbBalance] = useState<bigint | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  if (!isConnected) {
+  const walletAddress = connectedAddress ?? session?.user?.walletAddress ?? null;
+
+  // Fetch OKB balance on mount or wallet update
+  const fetchBalance = async () => {
+    if (!walletAddress) {
+      setCheckingBalance(false);
+      return;
+    }
+    setCheckingBalance(true);
+    try {
+      const bal = await xLayerPublicClient.getBalance({
+        address: walletAddress as `0x${string}`,
+      });
+      setOkbBalance(bal);
+    } catch (err) {
+      console.error("[Upload] failed to fetch OKB balance:", err);
+    } finally {
+      setCheckingBalance(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBalance();
+  }, [walletAddress]);
+
+  const handleCopy = () => {
+    if (!walletAddress) return;
+    navigator.clipboard.writeText(walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !file || !category) return;
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("title", title);
+    formData.append("description", description);
+    formData.append("category", category);
+    formData.append("tags", tagsInput);
+    formData.append("associatedCountry", associatedCountry);
+
+    try {
+      const res = await fetch("/api/video/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.id) {
+        router.push(`/watch/${data.id}`);
+      } else {
+        alert(data.error || "Failed to upload video");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("An error occurred during video upload");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!isConnected && !session?.user?.id) {
     return (
       <div className="mx-auto w-full max-w-md px-4 py-12 text-center space-y-4">
         <h1 className="font-display text-3xl font-bold">Enter the Pitch ⚽</h1>
         <div className="glass-panel p-6 space-y-4 bg-stadium/80">
           <p className="text-sm text-chalk/70">
-            Connect your wallet to start uploading videos and earning from your content.
+            Sign in with Google or connect your wallet to start uploading videos and earning.
           </p>
           <div className="flex justify-center">
             <ConnectButton />
@@ -31,78 +108,216 @@ export default function UploadPage() {
     );
   }
 
-  const handleSubmit = async () => {
-    if (!title.trim() || !file) return;
-    setLoading(true);
+  if (checkingBalance) {
+    return (
+      <div className="flex items-center justify-center min-h-[50vh] text-white">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-4 border-[var(--country-accent,#FFCC00)] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-white/60 text-sm">Verifying X Layer gas balance...</p>
+        </div>
+      </div>
+    );
+  }
 
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("title", title);
-    formData.append("description", description);
-    formData.append("category", category);
+  // OKB Balance Gate
+  const hasOKB = okbBalance !== null && okbBalance > BigInt(0);
+  if (!hasOKB) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh] px-4 py-8">
+        <div className="glass-panel p-8 max-w-md w-full text-center space-y-6 bg-stadium/80 border-amber-500/20 shadow-2xl">
+          <div className="text-5xl animate-bounce">⛽</div>
+          <h2 className="text-2xl font-bold text-white font-display">
+            You need OKB to upload
+          </h2>
+          <p className="text-white/70 text-sm leading-relaxed">
+            Uploading content requires a small amount of OKB for gas fees on the X Layer network. 
+            OKB is free to request from the testnet faucet.
+          </p>
+          
+          <div className="bg-black/40 border border-white/5 rounded-xl p-4 text-left space-y-3">
+            <h3 className="font-semibold text-white text-xs uppercase tracking-wider text-white/50">
+              How to get OKB:
+            </h3>
+            <ol className="space-y-2.5 text-white/80 text-sm">
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400 font-bold">1.</span>
+                <span className="flex-1">
+                  Copy your wallet address:
+                  <div className="mt-1 flex items-center gap-2">
+                    <code className="bg-white/10 px-2 py-1 rounded text-xs font-mono break-all select-all flex-1">
+                      {walletAddress}
+                    </code>
+                    <button 
+                      onClick={handleCopy}
+                      className="text-xs bg-white/15 px-2 py-1 rounded hover:bg-white/20 transition-all font-semibold active:scale-95 cursor-pointer"
+                    >
+                      {copied ? "Copied! ✓" : "Copy"}
+                    </button>
+                  </div>
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400 font-bold">2.</span>
+                <span>Go to the X Layer faucet and paste your address.</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-yellow-400 font-bold">3.</span>
+                <span>Return here once received (takes ~30 seconds).</span>
+              </li>
+            </ol>
+          </div>
 
-    try {
-      await fetch("/api/video/upload", {
-        method: "POST",
-        body: formData,
-      });
-      router.push("/watch/aaaaaaaa-0000-0000-0000-000000000001");
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+          <div className="flex flex-col gap-3">
+            <a
+              href="https://www.okx.com/xlayer/faucet"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-95 text-sm inline-block shadow-lg"
+            >
+              Get Free OKB from Faucet →
+            </a>
+
+            <button 
+              onClick={fetchBalance}
+              className="w-full py-3 bg-white/10 hover:bg-white/15 text-white font-bold rounded-xl transition-all active:scale-95 text-sm cursor-pointer border border-white/10"
+            >
+              I've got OKB — Check Again
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-6">
-      <h1 className="mb-4 font-display text-4xl font-bold">📹 Enter the Pitch</h1>
-      <div className="glass-panel space-y-3 p-4">
-        <input
-          name="file"
-          type="file"
-          accept="video/*"
-          className="w-full text-sm"
-          onChange={(e) => {
-            const files = e.target.files;
-            if (files && files.length > 0) {
-              setFile(files[0]);
-            }
-          }}
-        />
-        <input
-          name="title"
-          className="w-full rounded bg-black/40 p-2"
-          placeholder="Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          required
-        />
-        <textarea
-          name="description"
-          className="w-full rounded bg-black/40 p-2"
-          placeholder="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-        <select
-          name="category"
-          className="w-full rounded bg-black/40 p-2 text-white bg-slate-900"
-          value={category}
-          onChange={(e) => setCategory(e.target.value)}
+    <div className="mx-auto w-full max-w-2xl px-4 py-8">
+      <h1 className="mb-6 font-display text-4xl font-black italic tracking-tight text-white flex items-center gap-2">
+        <span>📹</span> Enter the Pitch
+      </h1>
+      
+      <div className="glass-panel space-y-5 p-6 bg-stadium/80 shadow-2xl">
+        {/* File upload */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            Video File *
+          </label>
+          <input
+            name="file"
+            type="file"
+            accept="video/*"
+            className="w-full text-sm bg-black/40 border border-white/10 p-3 rounded-lg file:mr-4 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-white/10 file:text-white file:cursor-pointer hover:file:bg-white/15 cursor-pointer text-white/60"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files && files.length > 0) {
+                setFile(files[0]);
+              }
+            }}
+            required
+          />
+        </div>
+
+        {/* Title */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            Title *
+          </label>
+          <input
+            name="title"
+            className="w-full rounded-lg bg-black/40 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none"
+            placeholder="World Cup Final 2026 tactical analysis..."
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+          />
+        </div>
+
+        {/* Description */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            Description
+          </label>
+          <textarea
+            name="description"
+            className="w-full rounded-lg bg-black/40 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none"
+            placeholder="A deep dive into the match tactics..."
+            rows={3}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+        </div>
+
+        {/* Category selector */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            Category *
+          </label>
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            required
+            className="w-full rounded-lg bg-slate-900 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none cursor-pointer"
+          >
+            <option value="">Select a category...</option>
+            <option value="highlights">Match Highlights</option>
+            <option value="documentary">Documentary</option>
+            <option value="preview">Match Preview</option>
+            <option value="culture">Fan Culture</option>
+            <option value="training">Training & Tactics</option>
+            <option value="interview">Player Interview</option>
+          </select>
+        </div>
+
+        {/* Tags input */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            Tags * (comma separated)
+          </label>
+          <input
+            type="text"
+            placeholder="e.g. argentina, messi, final, 2026"
+            value={tagsInput}
+            onChange={(e) => setTagsInput(e.target.value)}
+            required
+            className="w-full rounded-lg bg-black/40 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none"
+          />
+          <p className="text-xs text-white/40 leading-relaxed">
+            Tags help fans find your content. Add your country, players, or match name.
+          </p>
+        </div>
+
+        {/* Associated Country */}
+        <div className="space-y-1">
+          <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
+            Associated Country
+          </label>
+          <select 
+            value={associatedCountry} 
+            onChange={(e) => setAssociatedCountry(e.target.value)}
+            className="w-full rounded-lg bg-slate-900 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none cursor-pointer"
+          >
+            <option value="">All countries / General</option>
+            {COUNTRIES.map((t) => (
+              <option key={t.code} value={t.code}>
+                {t.flag} {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="space-y-1 pt-2">
+          <p className="text-sm text-chalk/70">
+            Universal price: 0.001 USDC/sec · Your earnings: 85% of every paid second watched
+          </p>
+          <p className="text-xs text-amber-200">
+            ⚠️ Only upload content you own or have permission to share.
+          </p>
+        </div>
+
+        <FootballButton 
+          disabled={loading || !file || !title.trim() || !category} 
+          onClick={handleSubmit}
         >
-          <option>Match Previews</option>
-          <option>Fan Reactions</option>
-          <option>Tactical Breakdowns</option>
-        </select>
-        <p className="text-sm text-chalk/70">
-          Universal price: 0.001 USDC/sec · Your earnings: 85% of every paid second watched
-        </p>
-        <p className="text-xs text-amber-200">
-          ⚠️ Only upload content you own or have permission to share.
-        </p>
-        <FootballButton disabled={loading || !file || !title.trim()} onClick={handleSubmit}>
-          {loading ? "Entering..." : "Enter the Pitch ⚽"}
+          {loading ? "Uploading content..." : "Enter the Pitch ⚽"}
         </FootballButton>
       </div>
     </div>

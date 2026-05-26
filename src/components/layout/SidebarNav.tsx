@@ -2,7 +2,7 @@ import Link from "next/link";
 import { GlassPanel } from "@/components/shared/GlassPanel";
 
 const navLinks = [
-  ["Stadium Feed 🏟️", "/feed"],
+  ["Stadium Feed 🏟️", "/stadium"],
   ["Crowd Roarball", "/leaderboards"],
   ["Enter the Pitch ⚽", "/upload"],
   ["Fan Passport 🛂", "/passport"],

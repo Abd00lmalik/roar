@@ -1,26 +1,38 @@
-import { HeroSection } from "@/components/landing/HeroSection";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { StadiumBackground } from "@/components/landing/StadiumBackground";
-import { SoundToggle } from "@/components/landing/SoundToggle";
-import { HowItWorks } from "@/components/landing/HowItWorks";
-import { StadiumLights } from "@/components/shared/StadiumLights";
-import { PitchLines } from "@/components/shared/PitchLines";
-import { XLayerBadge } from "@/components/shared/XLayerBadge";
 
 export default function HomePage() {
+  const router = useRouter();
+
   return (
-    <div className="relative">
-      <div className="relative min-h-screen overflow-hidden">
-        <StadiumBackground />
-        <PitchLines />
-        <StadiumLights />
-        <HeroSection />
-        <SoundToggle />
+    <main className="relative w-screen h-screen overflow-hidden bg-black flex flex-col items-center justify-center gap-8">
+      <StadiumBackground />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 z-0" />
+      
+      <div className="relative z-10 flex flex-col items-center gap-6 px-4">
+        {/* Logo */}
+        <h1 
+          className="text-6xl md:text-8xl font-black text-white tracking-tight"
+          style={{ fontFamily: "var(--font-display), sans-serif" }}
+        >
+          <span style={{ color: "var(--country-accent, #FFCC00)" }}>Roar</span>ball
+        </h1>
+        
+        <p className="text-white/70 text-lg text-center max-w-sm font-medium">
+          The World Cup fan streaming layer
+        </p>
+
+        {/* Single CTA */}
+        <button
+          onClick={() => router.push("/onboarding")}
+          className="mt-4 px-12 py-5 text-xl font-bold text-black rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95 shadow-2xl cursor-pointer"
+          style={{ background: "var(--country-accent, #FFCC00)" }}
+        >
+          Enter Stadium
+        </button>
       </div>
-      <HowItWorks />
-      <footer className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 pb-8 text-xs text-chalk/70">
-        <XLayerBadge />
-        <span>Roarball © 2025</span>
-      </footer>
-    </div>
+    </main>
   );
 }

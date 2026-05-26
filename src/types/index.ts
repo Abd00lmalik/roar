@@ -35,6 +35,7 @@ export type Video = {
   content_type: "short" | "long";
   total_watch_seconds: number;
   total_billable_seconds: number;
+  is_paid?: boolean;
 };
 
 export type WatchSessionSummary = {

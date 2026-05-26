@@ -18,13 +18,13 @@ export function HeroSection() {
       </p>
       <div className="flex flex-wrap items-center justify-center gap-3">
         <button
-          onClick={() => router.push("/feed")}
+          onClick={() => router.push("/stadium")}
           className="px-8 py-3 rounded-xl bg-[var(--country-accent,#FFCE00)] text-black font-bold text-sm hover:brightness-110 transition-all"
         >
           ENTER THE STADIUM
         </button>
         <button
-          onClick={() => router.push("/feed")}
+          onClick={() => router.push("/stadium")}
           className="px-8 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-sm transition-all"
         >
           STADIUM FEED 🏟️
