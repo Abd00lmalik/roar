@@ -116,12 +116,15 @@ async function seed() {
   }
 
   for (const video of TEST_VIDEOS) {
-    const { error } = await supabase.from("videos").upsert(video, { onConflict: "id" });
-    
-    if (error) {
-      console.error(`❌ Failed to seed "${video.title}":`, error.message);
-    } else {
-      console.log(`✓ ${video.title}`);
+    try {
+      const { error } = await supabase.from("videos").upsert(video, { onConflict: "id" });
+      if (error) {
+        console.error(`❌ Failed to seed "${video.title}":`, error.message);
+      } else {
+        console.log(`✓ ${video.title}`);
+      }
+    } catch (err: any) {
+      console.error(`❌ Failed to seed "${video.title}":`, err.message || err);
     }
   }
   

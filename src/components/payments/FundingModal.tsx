@@ -91,7 +91,7 @@ export function FundingModal({ onFundingSuccess, walletId, walletAddress }: Fund
             </h2>
             <p className="text-white/70 text-sm leading-relaxed">
               Fund your app wallet to continue watching. The streaming rate is{" "}
-              <span className="text-white font-mono font-semibold">0.001 USDC / second</span>.
+              <span className="text-white font-mono font-semibold">0.0001 USDC / second</span>.
             </p>
           </div>
 

@@ -6,7 +6,7 @@ export function HowItWorks() {
         <article className="glass-panel p-4">
           <h3 className="font-semibold">① Choose Your Country</h3>
           <p className="mt-2 text-sm text-chalk/80">
-            Pick from 16 fan nations and wear their colors all tournament.
+            Pick from 48 fan nations and wear their colors all tournament.
           </p>
         </article>
         <article className="glass-panel p-4">
@@ -18,7 +18,7 @@ export function HowItWorks() {
         <article className="glass-panel p-4">
           <h3 className="font-semibold">③ Pay Per Second, Earn Together</h3>
           <p className="mt-2 text-sm text-chalk/80">
-            Deposit USDC on X Layer and pay 0.001/sec. 85% goes to the creator.
+            Deposit USDC on X Layer and pay 0.0001/sec. 85% goes to the creator.
           </p>
         </article>
       </div>

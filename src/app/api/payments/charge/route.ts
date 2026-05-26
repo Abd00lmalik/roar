@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     const tolerance = 0.0001;
     const reported = amount_usdc ?? expectedAmount;
     if (Math.abs(reported - expectedAmount) > tolerance) {
-      return NextResponse.json({ error: "Amount mismatch — rate is 0.001 USDC/sec" }, { status: 400 });
+      return NextResponse.json({ error: "Amount mismatch — rate is 0.0001 USDC/sec" }, { status: 400 });
     }
 
     // Compute authoritative split server-side (never trust client split)

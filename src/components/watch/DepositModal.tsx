@@ -35,7 +35,7 @@ export function DepositModal({
             <p className="text-white/60 text-sm">
               Connect your wallet and deposit USDC to keep watching.
               <br />
-              Rate: 0.001 USDC / second
+              Rate: 0.0001 USDC / second
             </p>
 
             {/* Testnet faucet links */}
@@ -85,7 +85,7 @@ export function DepositModal({
             <h3 className="text-lg font-display font-semibold text-amber-300">🏟️ Stadium Admission Ticket</h3>
             <p className="text-sm text-chalk/90 leading-relaxed">
               Your free preview window has expired. The ticket rate for this match is:
-              <span className="block my-2 text-xl font-mono font-bold text-chalk">0.001 USDC / second</span>
+              <span className="block my-2 text-xl font-mono font-bold text-chalk">0.0001 USDC / second</span>
               Please approve a USDC allowance to keep watching and support creators on-chain.
             </p>
             <div className="flex flex-col gap-2 pt-2">
