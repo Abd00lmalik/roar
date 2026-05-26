@@ -2,11 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useAccount } from "wagmi";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 
 export function useUserProfile() {
   const { address } = useAccount();
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   return useQuery({
     queryKey: ["profile", "me", address],

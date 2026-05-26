@@ -1,11 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { COUNTRY_MAP } from "@/lib/theme/countries";
 
 export function CrowdRoarBanner() {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   const { data } = useQuery({
     queryKey: ["crowd-roar-stats"],
@@ -60,7 +60,7 @@ export function CrowdRoarBanner() {
 
   return (
     <div className="glass-panel flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
-      <span>🔥 Crowd Roarball</span>
+      <span>🔥 Crowd RoarTube</span>
       <span>👁 {Number(totalWatchSeconds).toLocaleString()} seconds watched today</span>
       <span>Top Country: {topCountryText}</span>
       <span>Top Creator: {topCreator}</span>

@@ -26,8 +26,8 @@ const mono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Roarball",
-  description: "The football-native live streaming platform.",
+  title: "RoarTube",
+  description: "Where football attention becomes creator revenue.",
 };
 
 export default function RootLayout({

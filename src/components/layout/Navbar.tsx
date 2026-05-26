@@ -9,12 +9,14 @@ import { useEffect, useState } from "react";
 import { xLayerPublicClient } from "@/lib/xlayer/client";
 import { formatEther } from "viem";
 
+import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
+
 const links = [
   { href: "/stadium", label: "Stadium Feed 🏟️" },
   { href: "/upload", label: "Upload 📹" },
   { href: "/passport", label: "Fan Passport 🪪" },
   { href: "/earnings", label: "Goal Earnings 💰" },
-  { href: "/leaderboards", label: "Crowd Roarball" },
+  { href: "/leaderboards", label: "Crowd RoarTube" },
 ];
 
 export function Navbar() {
@@ -45,10 +47,7 @@ export function Navbar() {
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link href="/stadium" className="flex items-center gap-2">
-          <span className="text-2xl font-black tracking-tight italic">
-            <span style={{ color: "var(--country-accent, #FFCC00)" }}>Roar</span>
-            <span className="text-white">ball</span>
-          </span>
+          <RoarTubeLogo />
         </Link>
 
         {/* Nav Links */}

@@ -14,15 +14,20 @@ export async function middleware(request: NextRequest) {
 
   const token = await getToken({ req: request });
 
-  // Not logged in → send to landing
-  if (!token) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  // Logged in but no country selected (check cookie) → send to onboarding
+  // 1. Check country selection cookie (must have selected team to view stadium/watch)
   const selectedTeam = request.cookies.get("roar_selected_team");
   if (!selectedTeam) {
     return NextResponse.redirect(new URL("/onboarding", request.url));
+  }
+
+  // 2. Allow public feed and watch pages without auth
+  if (pathname.startsWith("/stadium") || pathname.startsWith("/watch")) {
+    return NextResponse.next();
+  }
+
+  // 3. Protected pages (like /upload, /passport) require login
+  if (!token) {
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

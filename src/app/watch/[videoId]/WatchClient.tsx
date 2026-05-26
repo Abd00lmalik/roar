@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import ReactPlayer from "react-player";
 import { useSession } from "next-auth/react";
+import { useAccount } from "wagmi";
 import { VideoPlayer } from "@/components/watch/VideoPlayer";
 import { FreeTimeCountdown } from "@/components/watch/FreeTimeCountdown";
 import { FundingModal } from "@/components/payments/FundingModal";
@@ -10,68 +11,81 @@ import { DepositModal } from "@/components/watch/DepositModal";
 import { SessionPanel } from "@/components/watch/SessionPanel";
 import { ReactionBar } from "@/components/watch/ReactionBar";
 import { MatchTakes } from "@/components/watch/MatchTakes";
+import { AuthGate } from "@/components/watch/AuthGate";
 import { useSessionStore } from "@/store/sessionStore";
 import { useVARLock } from "@/hooks/useVARLock";
-import { FREE_SECONDS } from "@/lib/payments/micropayments";
+import { FREE_SECONDS, COST_PER_SECOND_USDC } from "@/lib/payments/micropayments";
 
 interface WatchClientProps {
   video: any;
 }
 
-/**
- * WatchClient — Circle × X Layer billing engine.
- *
- * Free window: 120 seconds per user (FREE_SECONDS from micropayments.ts).
- * Paid window: 0.001 USDC/sec via /api/stream/charge (Circle micropayments).
- *
- * Billing loop freeze conditions (ALL must be false to charge):
- *   1. video.paused
- *   2. document.hidden (tab not visible)
- *   3. video.readyState < 3 (buffering)
- *   4. varLocked (VAR review on-chain event)
- *
- * On insufficient balance: FundingModal (non-dismissable) blocks video.
- * VAR lock: billing silently skips, video continues playing.
- */
 export function WatchClient({ video }: WatchClientProps) {
   const { data: session } = useSession();
+  const { address: connectedAddress, isConnected } = useAccount();
   const session_ = useSessionStore();
 
-  // VAR lock — watches BillingController events on X Layer
   const matchId = video.match_id ?? "default-match";
   const varLocked = useVARLock(matchId);
 
-  // Video state
   const playerRef = useRef<ReactPlayer | null>(null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(true);
 
-  // Billing state
+  // Stages: "free" | "auth-gate" | "fund-gate" | "billed"
+  const [stage, setStage] = useState<"free" | "auth-gate" | "fund-gate" | "billed" >("free");
   const [freeSecondsLeft, setFreeSecondsLeft] = useState(FREE_SECONDS);
-  const [showFundingModal, setShowFundingModal] = useState(false);
   const [showDepositModal, setShowDepositModal] = useState(false);
   const billingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const varLockedRef = useRef(varLocked);
 
-  // Keep varLocked ref in sync (used inside interval closure)
+  // Keep varLocked ref in sync
   useEffect(() => {
     varLockedRef.current = varLocked;
   }, [varLocked]);
 
-  const walletId = session?.user?.circleWalletId ?? null;
-  const walletAddress = session?.user?.walletAddress ?? null;
-  const isOwner =
-    session?.user?.id && video.profiles?.id === session.user.id;
+  const [walletId, setWalletId] = useState<string | null>(session?.user?.circleWalletId ?? null);
+  const [walletAddress, setWalletAddress] = useState<string | null>(session?.user?.walletAddress ?? null);
+
+  const isOwner = session?.user?.id && video.profiles?.id === session.user.id;
   const isPaid = video.is_paid !== false;
 
-  // ── Billing loop ───────────────────────────────────────────────────────────
+  // Sync session wallet details when loaded
+  useEffect(() => {
+    if (session?.user?.circleWalletId) setWalletId(session.user.circleWalletId);
+    if (session?.user?.walletAddress) setWalletAddress(session.user.walletAddress);
+  }, [session]);
+
+  // Provision user wallet and passport
+  const provisionUser = useCallback(async () => {
+    try {
+      const res = await fetch("/api/auth/provision", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          countryCode: localStorage.getItem("supporter_nation") || "US",
+          walletAddress: connectedAddress || session?.user?.walletAddress || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        if (data.walletId) setWalletId(data.walletId);
+        if (data.walletAddress) setWalletAddress(data.walletAddress);
+        return data;
+      }
+    } catch (err) {
+      console.error("[WatchClient] provision error:", err);
+    }
+    return null;
+  }, [connectedAddress, session?.user?.walletAddress]);
+
+  // Start billing loop
   const startBillingLoop = useCallback(() => {
-    if (billingIntervalRef.current) return; // already running
+    if (billingIntervalRef.current) return;
 
     billingIntervalRef.current = setInterval(async () => {
       if (!videoElement) return;
 
-      // Freeze conditions
       const shouldFreeze =
         videoElement.paused ||
         document.hidden ||
@@ -88,39 +102,39 @@ export function WatchClient({ video }: WatchClientProps) {
             matchId,
             creatorWalletId: video.profiles?.circle_wallet_id ?? null,
             seconds: 1,
+            walletAddress: connectedAddress || walletAddress || undefined,
           }),
         });
 
-        const data = (await res.json()) as {
-          success?: boolean;
-          locked?: boolean;
-          remainingBalance?: number | null;
-        };
+        const data = await res.json();
 
-        if (data.locked) {
-          // VAR lock from server — skip silently (event will update varLocked)
-          return;
-        }
+        if (data.locked) return;
 
         if (!data.success) {
-          // Insufficient balance — pause and show funding modal
+          // Insufficient balance
           videoElement.pause();
-          videoElement.src = "";
           videoElement.style.pointerEvents = "none";
           setIsPlaying(false);
-          setShowFundingModal(true);
-
+          setStage("fund-gate");
           if (billingIntervalRef.current) {
             clearInterval(billingIntervalRef.current);
             billingIntervalRef.current = null;
           }
+        } else {
+          // Increment session store statistics
+          session_.setLive({
+            isActive: true,
+            isPaused: false,
+            totalSeconds: session_.totalSeconds + 1,
+            billableSeconds: session_.billableSeconds + 1,
+            currentCost: (session_.billableSeconds + 1) * COST_PER_SECOND_USDC,
+          });
         }
       } catch (err) {
-        // Network failure — skip tick, billing resumes next interval
         console.error("[WatchClient] billing tick failed:", err);
       }
-    }, 1_000);
-  }, [videoElement, matchId, video.profiles]);
+    }, 1000);
+  }, [videoElement, matchId, video.profiles, connectedAddress, walletAddress, session_]);
 
   const stopBillingLoop = useCallback(() => {
     if (billingIntervalRef.current) {
@@ -129,9 +143,9 @@ export function WatchClient({ video }: WatchClientProps) {
     }
   }, []);
 
-  // ── Free window countdown ───────────────────────────────────────────────────
+  // Free timer loop
   useEffect(() => {
-    if (!videoElement || isOwner || !isPaid) return;
+    if (!videoElement || isOwner || !isPaid || stage !== "free") return;
 
     const freeInterval = setInterval(() => {
       if (videoElement.paused || document.hidden || videoElement.readyState < 3) return;
@@ -139,46 +153,82 @@ export function WatchClient({ video }: WatchClientProps) {
       setFreeSecondsLeft((prev) => {
         if (prev <= 1) {
           clearInterval(freeInterval);
-          // Free time expired — start billing loop
-          if (!isOwner && isPaid && session?.user?.id) {
-            startBillingLoop();
-          } else if (!session?.user?.id) {
-            // Not signed in — show funding modal
+          
+          // Check if authenticated
+          const hasUser = session?.user?.id || isConnected || connectedAddress;
+          if (hasUser) {
+            provisionUser().then(() => {
+              setStage("billed");
+            });
+          } else {
             videoElement.pause();
             setIsPlaying(false);
-            setShowFundingModal(true);
+            setStage("auth-gate");
           }
           return 0;
         }
+
+        // Increment stats
+        session_.setLive({
+          isActive: true,
+          isPaused: false,
+          totalSeconds: session_.totalSeconds + 1,
+          billableSeconds: session_.billableSeconds,
+          currentCost: session_.currentCost,
+        });
+
         return prev - 1;
       });
-    }, 1_000);
+    }, 1000);
 
     return () => clearInterval(freeInterval);
-  }, [videoElement, isOwner, isPaid, session?.user?.id, startBillingLoop]);
+  }, [videoElement, isOwner, isPaid, stage, session?.user?.id, isConnected, connectedAddress, provisionUser, session_]);
 
-  // Start billing immediately if free time was already consumed (e.g. page reload)
+  // Start billing if free time was already consumed
   useEffect(() => {
-    if (freeSecondsLeft <= 0 && !isOwner && isPaid && videoElement && session?.user?.id) {
+    if (freeSecondsLeft <= 0 && !isOwner && isPaid && videoElement && stage === "free") {
+      const hasUser = session?.user?.id || isConnected || connectedAddress;
+      if (hasUser) {
+        provisionUser().then(() => {
+          setStage("billed");
+        });
+      } else {
+        videoElement.pause();
+        setIsPlaying(false);
+        setStage("auth-gate");
+      }
+    }
+  }, [freeSecondsLeft, isOwner, isPaid, videoElement, stage, session?.user?.id, isConnected, connectedAddress, provisionUser]);
+
+  // Billing trigger on stage transition
+  useEffect(() => {
+    if (stage === "billed" && !isOwner && isPaid && videoElement) {
       startBillingLoop();
     }
     return stopBillingLoop;
-  }, [freeSecondsLeft, isOwner, isPaid, videoElement, session?.user?.id, startBillingLoop, stopBillingLoop]);
+  }, [stage, isOwner, isPaid, videoElement, startBillingLoop, stopBillingLoop]);
 
-  // ── Resume stream after funding ─────────────────────────────────────────────
+  // Resume after funding
   const handleFundingSuccess = useCallback(() => {
-    setShowFundingModal(false);
-
     if (videoElement) {
       videoElement.style.pointerEvents = "";
-      // Re-create video src to restart stream
-      const src = video.video_url;
-      videoElement.src = src;
       videoElement.play().catch(console.error);
     }
     setIsPlaying(true);
-    startBillingLoop();
-  }, [videoElement, video.video_url, startBillingLoop]);
+    setStage("billed");
+  }, [videoElement]);
+
+  // Auth gate complete callback
+  const handleAuthenticated = useCallback(() => {
+    provisionUser().then(() => {
+      if (videoElement) {
+        videoElement.style.pointerEvents = "";
+        videoElement.play().catch(console.error);
+      }
+      setIsPlaying(true);
+      setStage("billed");
+    });
+  }, [videoElement, provisionUser]);
 
   const onReady = () => {
     const internal = playerRef.current?.getInternalPlayer();
@@ -187,9 +237,7 @@ export function WatchClient({ video }: WatchClientProps) {
     }
   };
 
-  // onProgress is kept for future use (e.g. session panel display)
   const onProgress = (_state: { playedSeconds: number }) => {};
-
 
   return (
     <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[1fr_320px]">
@@ -262,7 +310,7 @@ export function WatchClient({ video }: WatchClientProps) {
               </p>
             )}
             <button
-              className="text-xs text-white/50 underline mt-1"
+              className="text-xs text-white/50 underline mt-1 cursor-pointer"
               onClick={() => setShowDepositModal(true)}
             >
               Deposit USDC
@@ -271,8 +319,13 @@ export function WatchClient({ video }: WatchClientProps) {
         )}
       </aside>
 
+      {/* Auth Gate Modal */}
+      {stage === "auth-gate" && (
+        <AuthGate onAuthenticated={handleAuthenticated} />
+      )}
+
       {/* Non-dismissable funding gate */}
-      {showFundingModal && (
+      {stage === "fund-gate" && (
         <FundingModal
           walletId={walletId}
           walletAddress={walletAddress}

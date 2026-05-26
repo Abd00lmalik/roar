@@ -1,5 +1,5 @@
 /**
- * Circle Developer-Controlled Wallet provisioning for Roarball.
+ * Circle Developer-Controlled Wallet provisioning for RoarTube.
  *
  * Adapted from Streamarc's circle-wallets.ts. Uses the same
  * @circle-fin/developer-controlled-wallets SDK and env var names.
@@ -44,7 +44,7 @@ export interface CircleWallet {
 
 // ── provisionUserWallet ───────────────────────────────────────────────────────
 /**
- * Provision a Circle Developer-Controlled Wallet for a Roarball user.
+ * Provision a Circle Developer-Controlled Wallet for a RoarTube user.
  *
  * Idempotent — safe to call multiple times for the same userId:
  * if a wallet already exists for this refId it is returned immediately.
@@ -75,7 +75,7 @@ export async function provisionUserWallet(userId: string): Promise<CircleWallet 
       blockchains: [PRIMARY_BLOCKCHAIN],
       count: 1,
       accountType: "EOA",
-      metadata: [{ name: `roarball-${userId.slice(0, 8)}`, refId: userId }],
+      metadata: [{ name: `roartube-${userId.slice(0, 8)}`, refId: userId }],
     });
 
     const wallet = response.data?.wallets?.[0];
@@ -131,7 +131,7 @@ export async function getWalletIdByAddress(address: string): Promise<string | nu
 // ── getCircleDepositAddress ───────────────────────────────────────────────────
 /**
  * Return the deposit address for a Circle walletId.
- * Users send USDC to this address to fund their Roarball wallet.
+ * Users send USDC to this address to fund their RoarTube wallet.
  */
 export async function getCircleDepositAddress(
   walletId: string,

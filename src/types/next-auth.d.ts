@@ -2,7 +2,7 @@ import "next-auth";
 import "next-auth/jwt";
 
 /**
- * NextAuth type augmentation for Roarball.
+ * NextAuth type augmentation for RoarTube.
  *
  * Extends the base Session and JWT types to expose:
  *   - user.id            — Google sub / Supabase user UUID

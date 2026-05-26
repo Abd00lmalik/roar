@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useAccount } from "wagmi";
 import { useUserProfile } from "@/hooks/useUserProfile";
@@ -23,7 +23,7 @@ export function MatchTakes({ videoId }: MatchTakesProps) {
   const [takes,   setTakes]   = useState<any[]>([]);
 
   const fetchTakes = useCallback(async () => {
-    const supabase = createClient();
+    const supabase = getSupabaseClient();
     if (!supabase) return;
     const { data } = await supabase
       .from("match_takes")
@@ -48,7 +48,7 @@ export function MatchTakes({ videoId }: MatchTakesProps) {
     setLoading(true);
     setError(null);
 
-    const supabase = createClient();
+    const supabase = getSupabaseClient();
     if (!supabase) {
       setError("Database is not configured.");
       setLoading(false);

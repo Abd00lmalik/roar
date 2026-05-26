@@ -42,17 +42,36 @@ function getCircleClient() {
 export async function POST(req: NextRequest) {
   try {
     // ── 1. Auth ──────────────────────────────────────────────────────────────
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
     const body = await req.json().catch(() => ({})) as {
       matchId?: string;
       creatorWalletId?: string;
       seconds?: number;
+      walletAddress?: string;
     };
+
+    const session = await getServerSession(authOptions);
+    let userId = session?.user?.id;
+    let circleWalletId = session?.user?.circleWalletId;
+
+    const supabase = createSupabaseServerClient();
+
+    if (!userId && body.walletAddress) {
+      if (supabase) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, circle_wallet_id")
+          .eq("wallet_address", body.walletAddress)
+          .maybeSingle();
+        if (profile) {
+          userId = profile.id;
+          circleWalletId = profile.circle_wallet_id;
+        }
+      }
+    }
+
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
     const matchSlug = body.matchId ?? "default-match";
     const seconds = Math.max(1, Math.min(body.seconds ?? 1, 60)); // clamp 1–60
@@ -76,9 +95,6 @@ export async function POST(req: NextRequest) {
     }
 
     // ── 3. Balance check + charge tracking ───────────────────────────────────
-    const supabase = createSupabaseServerClient();
-    const circleWalletId = session.user.circleWalletId;
-
     let remainingBalance: number | null = null;
 
     if (circleWalletId) {

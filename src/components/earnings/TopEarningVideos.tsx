@@ -1,6 +1,6 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { useQuery } from "@tanstack/react-query";
 
 interface TopEarningVideosProps {
@@ -8,7 +8,7 @@ interface TopEarningVideosProps {
 }
 
 export function TopEarningVideos({ profileId }: TopEarningVideosProps) {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
 
   const { data: videos, isLoading } = useQuery({
     queryKey: ["top-earning-videos", profileId],

@@ -5,8 +5,8 @@ export const PROTOCOL = {
   VAULT_ADDRESS:   process.env.NEXT_PUBLIC_VAULT_ADDRESS as `0x${string}`,
   USDC_ADDRESS:    process.env.NEXT_PUBLIC_USDC_ADDRESS  as `0x${string}`,
 
-  // Economic constants — must match RoarballVault.sol exactly
-  MICRO_USDC_PER_SECOND: BigInt(1000),  // 0.001 USDC at 6 decimals (uses BigInt constructor for ES2017)
+  // Economic constants — must match RoarTubeVault.sol exactly
+  MICRO_USDC_PER_SECOND: BigInt(100),  // 0.0001 USDC at 6 decimals (uses BigInt constructor for ES2017)
   CREATOR_BPS:           8500,    // 85%
   FAN_BPS:               1000,    // 10%
   TREASURY_BPS:          500,     //  5%

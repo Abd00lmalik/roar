@@ -36,6 +36,7 @@ export type Video = {
   total_watch_seconds: number;
   total_billable_seconds: number;
   is_paid?: boolean;
+  is_demo?: boolean;
 };
 
 export type WatchSessionSummary = {

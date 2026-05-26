@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 
 export function useBadges(userId?: string) {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   return useQuery({
     queryKey: ["badges", userId],
     queryFn: async () => {

@@ -28,6 +28,13 @@ export function VideoCard({ video }: { video: Video }) {
             </span>
           )}
 
+          {/* Demo badge */}
+          {video.is_demo && (
+            <span className="absolute top-2 right-2 bg-red-600/90 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-md shadow-md uppercase tracking-wider">
+              DEMO
+            </span>
+          )}
+
           {/* Play overlay on hover */}
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 hover:scale-110 transition-transform">

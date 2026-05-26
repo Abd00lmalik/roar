@@ -17,11 +17,11 @@ export default function HomePage() {
           className="text-6xl md:text-8xl font-black text-white tracking-tight"
           style={{ fontFamily: "var(--font-display), sans-serif" }}
         >
-          <span style={{ color: "var(--country-accent, #FFCC00)" }}>Roar</span>ball
+          <span style={{ color: "var(--country-accent, #FFCC00)" }}>Roar</span>Tube
         </h1>
         
         <p className="text-white/70 text-lg text-center max-w-sm font-medium">
-          The World Cup fan streaming layer
+          Where football attention becomes creator revenue.
         </p>
 
         {/* Single CTA */}

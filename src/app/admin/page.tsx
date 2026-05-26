@@ -1,10 +1,10 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 
 export default function AdminPage() {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   const queryClient = useQueryClient();
 
   const { data: stats } = useQuery({
@@ -56,7 +56,7 @@ export default function AdminPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-6">
-      <h1 className="font-display text-4xl font-bold">Roarball Admin Panel</h1>
+      <h1 className="font-display text-4xl font-bold">RoarTube Admin Panel</h1>
       <section className="glass-panel grid gap-2 p-4 text-sm md:grid-cols-2">
         <p>Total Watch Seconds: {Number(totalWatchSeconds).toLocaleString()}</p>
         <p>Billable Seconds: {Number(totalBillableSeconds).toLocaleString()}</p>

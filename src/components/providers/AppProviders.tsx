@@ -25,10 +25,10 @@ const connectors = connectorsForWallets(
     },
   ],
   {
-    appName: "Roarball",
+    appName: "RoarTube",
     projectId: walletConnectProjectId,
     appDescription: "Where football attention becomes creator revenue.",
-    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+    appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://roartube.vercel.app",
   },
 );
 

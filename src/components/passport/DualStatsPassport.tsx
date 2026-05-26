@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { useCreatorEarnings } from "@/hooks/useCreatorEarnings";
 import { useWithdrawCreatorEarnings } from "@/lib/contracts/hooks";
 import { COUNTRY_MAP } from "@/lib/theme/countries";
@@ -14,7 +14,7 @@ interface DualStatsPassportProps {
 }
 
 export function DualStatsPassport({ profile }: DualStatsPassportProps) {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   const [done, setDone] = useState(false);
 
   // 1. AS A FAN: Fetch watch sessions to compute Matches Watched and USDC Spent

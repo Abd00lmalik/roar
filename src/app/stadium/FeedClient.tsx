@@ -78,7 +78,7 @@ export function FeedClient({ initialVideos }: FeedClientProps) {
       <aside className="space-y-3">
         <GlassPanel className="p-3 text-sm">
           <p className="font-semibold">Trending</p>
-          <p className="mt-2 text-xs text-chalk/70">@GhanaStand is live in Roarball.</p>
+          <p className="mt-2 text-xs text-chalk/70">@GhanaStand is live in RoarTube.</p>
         </GlassPanel>
         <AIPlaceholder
           icon="🤖"

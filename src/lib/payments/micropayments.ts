@@ -1,5 +1,5 @@
 /**
- * Roarball micropayment engine.
+ * RoarTube micropayment engine.
  *
  * Implements the immutable 85 / 10 / 5 revenue split for per-second
  * streaming charges. Routes to the existing on-chain voucher system
@@ -23,12 +23,12 @@ export const SPLIT = {
 // (These are constants — no runtime check needed)
 
 // ── Rate constants (mirrors lib/payments/constants.ts) ────────────────────────
-export const COST_PER_SECOND_USDC = 0.001;
+export const COST_PER_SECOND_USDC = 0.0001;
 export const FREE_SECONDS = 120;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface StreamChargeParams {
-  /** Roarball user's Circle walletId (from their profile) */
+  /** RoarTube user's Circle walletId (from their profile) */
   userWalletId: string;
   /** Creator's wallet address (receives 85%) */
   creatorWalletAddress: string;

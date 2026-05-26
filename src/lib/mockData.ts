@@ -72,8 +72,8 @@ export const badgesSeed = [
   {
     id: 1,
     slug: "first_roar",
-    name: "First Roarball",
-    description: "You watched your first video on Roarball",
+    name: "First RoarTube",
+    description: "You watched your first video on RoarTube",
     icon: "🏆",
   },
   {
@@ -94,14 +94,14 @@ export const badgesSeed = [
     id: 4,
     slug: "10_min_fan",
     name: "10-Minute Fan",
-    description: "Watched 10 total minutes on Roarball",
+    description: "Watched 10 total minutes on RoarTube",
     icon: "⏱️",
   },
   {
     id: 5,
     slug: "30_min_fan",
     name: "30-Minute Fan",
-    description: "Watched 30 total minutes on Roarball",
+    description: "Watched 30 total minutes on RoarTube",
     icon: "🎽",
   },
   {

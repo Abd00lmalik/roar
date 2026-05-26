@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { xLayerPublicClient } from "@/lib/xlayer/client";
 import { ADDRESSES, contractsConfigured } from "@/lib/xlayer/addresses";
 import { WATCH_LEADERBOARD_ABI } from "@/lib/xlayer/abis";
@@ -107,7 +107,7 @@ export function useCurrentWeekId(): bigint | null {
 // ── Supabase leaderboard (global creators/fans/countries — existing) ──────────
 
 export function useLeaderboard() {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   return useQuery({
     queryKey: ["leaderboard"],
     queryFn: async () => {

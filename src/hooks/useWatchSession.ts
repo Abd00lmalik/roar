@@ -4,7 +4,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useSignTypedData, useAccount, useReadContract } from "wagmi";
 import { getAddress } from "viem";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { PROTOCOL } from "@/lib/constants/protocol";
 
 const WATCH_VOUCHER_TYPES = {
@@ -78,7 +78,7 @@ export function useWatchSession({
     if (!userAddress || !enabled) return;
 
     const checkAndSignUnsigned = async () => {
-      const supabase = createClient();
+      const supabase = getSupabaseClient();
       if (!supabase) return;
 
       const { data: unsignedVouchers, error } = await supabase
@@ -142,7 +142,7 @@ export function useWatchSession({
       setUnsignedVoucher(null);
     } catch (err) {
       console.error("[useWatchSession] Sign carry-forward failed:", err);
-      const supabase = createClient();
+      const supabase = getSupabaseClient();
       if (supabase) {
         await supabase
           .from("vouchers")
@@ -158,7 +158,7 @@ export function useWatchSession({
 
   const dismissUnsigned = async () => {
     if (!unsignedVoucher) return;
-    const supabase = createClient();
+    const supabase = getSupabaseClient();
     if (supabase) {
       await supabase
         .from("vouchers")

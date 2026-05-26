@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createClient } from "@/lib/supabase/client";
+import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { EmptyState } from "@/components/ui/EmptyState";
 
 interface WatchHistoryProps {
@@ -7,7 +7,7 @@ interface WatchHistoryProps {
 }
 
 export function WatchHistory({ profileId }: WatchHistoryProps) {
-  const supabase = createClient();
+  const supabase = getSupabaseClient();
   const { data: sessions, isLoading } = useQuery({
     queryKey: ["watch_sessions", profileId],
     queryFn: async () => {

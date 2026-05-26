@@ -247,24 +247,26 @@ export default function UploadPage() {
         </div>
 
         {/* Category selector */}
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
             Category *
           </label>
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none cursor-pointer"
-          >
-            <option value="">Select a category...</option>
-            <option value="highlights">Match Highlights</option>
-            <option value="documentary">Documentary</option>
-            <option value="preview">Match Preview</option>
-            <option value="culture">Fan Culture</option>
-            <option value="training">Training & Tactics</option>
-            <option value="interview">Player Interview</option>
-          </select>
+          <div className="grid grid-cols-2 gap-2">
+            {["highlights", "documentary", "preview", "reaction", "culture", "tactical"].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategory(cat)}
+                className={`py-2.5 px-3 rounded-xl text-sm font-medium capitalize transition-colors cursor-pointer border
+                  ${category === cat
+                    ? "bg-[var(--country-accent)] text-black border-[var(--country-accent)] shadow-[0_0_15px_rgba(255,206,0,0.15)] font-semibold"
+                    : "bg-white/[0.04] text-white/60 border-white/5 hover:bg-white/[0.08] hover:text-white"
+                  }`}
+              >
+                {cat === "preview" ? "match preview" : cat}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Tags input */}
@@ -306,7 +308,7 @@ export default function UploadPage() {
 
         <div className="space-y-1 pt-2">
           <p className="text-sm text-chalk/70">
-            Universal price: 0.001 USDC/sec · Your earnings: 85% of every paid second watched
+            Universal price: 0.0001 USDC/sec · Your earnings: 85% of every paid second watched
           </p>
           <p className="text-xs text-amber-200">
             ⚠️ Only upload content you own or have permission to share.
