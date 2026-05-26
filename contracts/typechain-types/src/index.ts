@@ -3,7 +3,10 @@
 /* eslint-disable */
 import type * as varSystemSol from "./VARSystem.sol";
 export type { varSystemSol };
+export type { BillingController } from "./BillingController";
 export type { FanPassport } from "./FanPassport";
+export type { FanRewardsPool } from "./FanRewardsPool";
 export type { MockUSDC } from "./MockUSDC";
 export type { RoarBadges } from "./RoarBadges";
 export type { StadiumAdBoard } from "./StadiumAdBoard";
+export type { WatchLeaderboard } from "./WatchLeaderboard";

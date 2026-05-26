@@ -102,9 +102,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.Strings__factory>;
     getContractFactory(
+      name: "BillingController",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.BillingController__factory>;
+    getContractFactory(
       name: "FanPassport",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.FanPassport__factory>;
+    getContractFactory(
+      name: "FanRewardsPool",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.FanRewardsPool__factory>;
     getContractFactory(
       name: "MockUSDC",
       signerOrOptions?: ethers.Signer | FactoryOptions
@@ -125,6 +133,10 @@ declare module "hardhat/types/runtime" {
       name: "VARSystem",
       signerOrOptions?: ethers.Signer | FactoryOptions
     ): Promise<Contracts.VARSystem__factory>;
+    getContractFactory(
+      name: "WatchLeaderboard",
+      signerOrOptions?: ethers.Signer | FactoryOptions
+    ): Promise<Contracts.WatchLeaderboard__factory>;
 
     getContractAt(
       name: "Ownable",
@@ -237,10 +249,20 @@ declare module "hardhat/types/runtime" {
       signer?: ethers.Signer
     ): Promise<Contracts.Strings>;
     getContractAt(
+      name: "BillingController",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.BillingController>;
+    getContractAt(
       name: "FanPassport",
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.FanPassport>;
+    getContractAt(
+      name: "FanRewardsPool",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.FanRewardsPool>;
     getContractAt(
       name: "MockUSDC",
       address: string | ethers.Addressable,
@@ -266,6 +288,11 @@ declare module "hardhat/types/runtime" {
       address: string | ethers.Addressable,
       signer?: ethers.Signer
     ): Promise<Contracts.VARSystem>;
+    getContractAt(
+      name: "WatchLeaderboard",
+      address: string | ethers.Addressable,
+      signer?: ethers.Signer
+    ): Promise<Contracts.WatchLeaderboard>;
 
     deployContract(
       name: "Ownable",
@@ -356,9 +383,17 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
     deployContract(
+      name: "BillingController",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.BillingController>;
+    deployContract(
       name: "FanPassport",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.FanPassport>;
+    deployContract(
+      name: "FanRewardsPool",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FanRewardsPool>;
     deployContract(
       name: "MockUSDC",
       signerOrOptions?: ethers.Signer | DeployContractOptions
@@ -379,6 +414,10 @@ declare module "hardhat/types/runtime" {
       name: "VARSystem",
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.VARSystem>;
+    deployContract(
+      name: "WatchLeaderboard",
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.WatchLeaderboard>;
 
     deployContract(
       name: "Ownable",
@@ -491,10 +530,20 @@ declare module "hardhat/types/runtime" {
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.Strings>;
     deployContract(
+      name: "BillingController",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.BillingController>;
+    deployContract(
       name: "FanPassport",
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.FanPassport>;
+    deployContract(
+      name: "FanRewardsPool",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.FanRewardsPool>;
     deployContract(
       name: "MockUSDC",
       args: any[],
@@ -520,6 +569,11 @@ declare module "hardhat/types/runtime" {
       args: any[],
       signerOrOptions?: ethers.Signer | DeployContractOptions
     ): Promise<Contracts.VARSystem>;
+    deployContract(
+      name: "WatchLeaderboard",
+      args: any[],
+      signerOrOptions?: ethers.Signer | DeployContractOptions
+    ): Promise<Contracts.WatchLeaderboard>;
 
     // default types
     getContractFactory(

@@ -1,80 +1,88 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-contract FanPassport is ERC721, Ownable, ReentrancyGuard {
+/**
+ * @title FanPassport
+ * @notice Soulbound identity NFT for Roarball World Cup fans.
+ *         Every user gets exactly one. Cannot be transferred.
+ *         Stores country, confederation, and cumulative watch-time (updated by backend).
+ */
+contract FanPassport is ERC721, Ownable {
+
     struct Passport {
-        string countryCode;
-        uint256 stakedOKB;
+        string  countryCode;       // e.g. "BR", "ES", "GH"
+        string  confederation;     // "UEFA", "CAF", "AFC", etc.
+        uint256 watchTimeSeconds;  // lifetime cumulative — updated by backend
         uint256 mintedAt;
-        bool active;
     }
 
-    uint256 public constant MINT_STAKE = 0.01 ether;
-    uint256 private _tokenIds;
-
-    mapping(address => uint256) public holderToTokenId;
     mapping(uint256 => Passport) public passports;
+    mapping(address => uint256)  public addressToTokenId;  // 0 = not minted
+    uint256 private _nextTokenId = 1;
 
-    event PassportMinted(address indexed holder, uint256 tokenId, string countryCode);
-    event PassportBurned(address indexed holder, uint256 tokenId);
+    event PassportMinted(address indexed user, uint256 tokenId, string countryCode);
+    event WatchTimeUpdated(uint256 indexed tokenId, uint256 newTotal);
 
-    constructor() ERC721("Roarball Fan Passport", "ROARPASS") Ownable(msg.sender) {}
+    constructor() ERC721("ROAR Fan Passport", "ROAR") Ownable(msg.sender) {}
 
-    function mintPassport(string calldata countryCode) external payable nonReentrant {
-        require(msg.value >= MINT_STAKE, "FanPassport: insufficient OKB stake");
-        require(holderToTokenId[msg.sender] == 0, "FanPassport: already has passport");
-        require(bytes(countryCode).length == 2, "FanPassport: invalid country code");
-
-        _tokenIds++;
-        uint256 tokenId = _tokenIds;
-
-        _safeMint(msg.sender, tokenId);
-
-        passports[tokenId] = Passport({
-            countryCode: countryCode,
-            stakedOKB: msg.value,
-            mintedAt: block.timestamp,
-            active: true
-        });
-
-        holderToTokenId[msg.sender] = tokenId;
-
-        emit PassportMinted(msg.sender, tokenId, countryCode);
-    }
-
-    function getStakedCountry(address holder) external view returns (string memory) {
-        uint256 tokenId = holderToTokenId[holder];
-        if (tokenId == 0) return "";
-        return passports[tokenId].countryCode;
-    }
-
-    function burnPassport() external nonReentrant {
-        uint256 tokenId = holderToTokenId[msg.sender];
-        require(tokenId != 0, "FanPassport: no passport");
-
-        uint256 staked = passports[tokenId].stakedOKB;
-        passports[tokenId].active = false;
-        holderToTokenId[msg.sender] = 0;
-
-        _burn(tokenId);
-
-        (bool ok,) = msg.sender.call{value: staked}("");
-        require(ok, "FanPassport: OKB return failed");
-
-        emit PassportBurned(msg.sender, tokenId);
-    }
-
+    // ── Soulbound: block all transfers after mint ─────────────────────────────
     function _update(address to, uint256 tokenId, address auth)
-        internal override returns (address)
-    {
-        address from = _ownerOf(tokenId);
-        require(from == address(0) || to == address(0), "FanPassport: non-transferable");
+        internal override returns (address) {
+        require(
+            _ownerOf(tokenId) == address(0),
+            "FanPassport: soulbound - non-transferable"
+        );
         return super._update(to, tokenId, auth);
     }
 
-    receive() external payable {}
+    /**
+     * @notice Mint a Fan Passport for a user. Owner-only. Idempotent guard on-chain.
+     * @param user         Wallet address of the fan
+     * @param countryCode  ISO 3166-1 alpha-2 or custom (e.g. "GB-ENG")
+     * @param confederation  Confederation string e.g. "UEFA"
+     */
+    function mint(
+        address user,
+        string calldata countryCode,
+        string calldata confederation
+    ) external onlyOwner returns (uint256) {
+        require(addressToTokenId[user] == 0, "FanPassport: already minted");
+        uint256 tokenId = _nextTokenId++;
+        _safeMint(user, tokenId);
+        passports[tokenId] = Passport(countryCode, confederation, 0, block.timestamp);
+        addressToTokenId[user] = tokenId;
+        emit PassportMinted(user, tokenId, countryCode);
+        return tokenId;
+    }
+
+    /**
+     * @notice Called by backend in batches — NOT per second.
+     *         Accumulates watch-time off-chain; flushes every 60 seconds.
+     */
+    function updateWatchTime(uint256 tokenId, uint256 additionalSeconds)
+        external onlyOwner {
+        require(_ownerOf(tokenId) != address(0), "FanPassport: token does not exist");
+        passports[tokenId].watchTimeSeconds += additionalSeconds;
+        emit WatchTimeUpdated(tokenId, passports[tokenId].watchTimeSeconds);
+    }
+
+    /**
+     * @notice Convenience view — returns Passport struct and tokenId for an address.
+     */
+    function getPassport(address user) external view
+        returns (Passport memory passport, uint256 tokenId) {
+        tokenId = addressToTokenId[user];
+        require(tokenId != 0, "FanPassport: no passport for this address");
+        passport = passports[tokenId];
+    }
+
+    /**
+     * @notice Check if an address already has a passport.
+     */
+    function hasPassport(address user) external view returns (bool) {
+        return addressToTokenId[user] != 0;
+    }
 }

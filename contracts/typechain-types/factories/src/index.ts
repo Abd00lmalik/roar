@@ -2,7 +2,10 @@
 /* tslint:disable */
 /* eslint-disable */
 export * as varSystemSol from "./VARSystem.sol";
+export { BillingController__factory } from "./BillingController__factory";
 export { FanPassport__factory } from "./FanPassport__factory";
+export { FanRewardsPool__factory } from "./FanRewardsPool__factory";
 export { MockUSDC__factory } from "./MockUSDC__factory";
 export { RoarBadges__factory } from "./RoarBadges__factory";
 export { StadiumAdBoard__factory } from "./StadiumAdBoard__factory";
+export { WatchLeaderboard__factory } from "./WatchLeaderboard__factory";

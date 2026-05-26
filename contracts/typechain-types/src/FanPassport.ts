@@ -23,18 +23,38 @@ import type {
   TypedContractMethod,
 } from "../common";
 
+export declare namespace FanPassport {
+  export type PassportStruct = {
+    countryCode: string;
+    confederation: string;
+    watchTimeSeconds: BigNumberish;
+    mintedAt: BigNumberish;
+  };
+
+  export type PassportStructOutput = [
+    countryCode: string,
+    confederation: string,
+    watchTimeSeconds: bigint,
+    mintedAt: bigint
+  ] & {
+    countryCode: string;
+    confederation: string;
+    watchTimeSeconds: bigint;
+    mintedAt: bigint;
+  };
+}
+
 export interface FanPassportInterface extends Interface {
   getFunction(
     nameOrSignature:
-      | "MINT_STAKE"
+      | "addressToTokenId"
       | "approve"
       | "balanceOf"
-      | "burnPassport"
       | "getApproved"
-      | "getStakedCountry"
-      | "holderToTokenId"
+      | "getPassport"
+      | "hasPassport"
       | "isApprovedForAll"
-      | "mintPassport"
+      | "mint"
       | "name"
       | "owner"
       | "ownerOf"
@@ -48,6 +68,7 @@ export interface FanPassportInterface extends Interface {
       | "tokenURI"
       | "transferFrom"
       | "transferOwnership"
+      | "updateWatchTime"
   ): FunctionFragment;
 
   getEvent(
@@ -55,14 +76,14 @@ export interface FanPassportInterface extends Interface {
       | "Approval"
       | "ApprovalForAll"
       | "OwnershipTransferred"
-      | "PassportBurned"
       | "PassportMinted"
       | "Transfer"
+      | "WatchTimeUpdated"
   ): EventFragment;
 
   encodeFunctionData(
-    functionFragment: "MINT_STAKE",
-    values?: undefined
+    functionFragment: "addressToTokenId",
+    values: [AddressLike]
   ): string;
   encodeFunctionData(
     functionFragment: "approve",
@@ -73,19 +94,15 @@ export interface FanPassportInterface extends Interface {
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "burnPassport",
-    values?: undefined
-  ): string;
-  encodeFunctionData(
     functionFragment: "getApproved",
     values: [BigNumberish]
   ): string;
   encodeFunctionData(
-    functionFragment: "getStakedCountry",
+    functionFragment: "getPassport",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "holderToTokenId",
+    functionFragment: "hasPassport",
     values: [AddressLike]
   ): string;
   encodeFunctionData(
@@ -93,8 +110,8 @@ export interface FanPassportInterface extends Interface {
     values: [AddressLike, AddressLike]
   ): string;
   encodeFunctionData(
-    functionFragment: "mintPassport",
-    values: [string]
+    functionFragment: "mint",
+    values: [AddressLike, string, string]
   ): string;
   encodeFunctionData(functionFragment: "name", values?: undefined): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
@@ -139,34 +156,34 @@ export interface FanPassportInterface extends Interface {
     functionFragment: "transferOwnership",
     values: [AddressLike]
   ): string;
+  encodeFunctionData(
+    functionFragment: "updateWatchTime",
+    values: [BigNumberish, BigNumberish]
+  ): string;
 
-  decodeFunctionResult(functionFragment: "MINT_STAKE", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
-  decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
-    functionFragment: "burnPassport",
+    functionFragment: "addressToTokenId",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "approve", data: BytesLike): Result;
+  decodeFunctionResult(functionFragment: "balanceOf", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "getApproved",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "getStakedCountry",
+    functionFragment: "getPassport",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
-    functionFragment: "holderToTokenId",
+    functionFragment: "hasPassport",
     data: BytesLike
   ): Result;
   decodeFunctionResult(
     functionFragment: "isApprovedForAll",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "mintPassport",
-    data: BytesLike
-  ): Result;
+  decodeFunctionResult(functionFragment: "mint", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "name", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "ownerOf", data: BytesLike): Result;
@@ -199,6 +216,10 @@ export interface FanPassportInterface extends Interface {
   ): Result;
   decodeFunctionResult(
     functionFragment: "transferOwnership",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(
+    functionFragment: "updateWatchTime",
     data: BytesLike
   ): Result;
 }
@@ -256,32 +277,19 @@ export namespace OwnershipTransferredEvent {
   export type LogDescription = TypedLogDescription<Event>;
 }
 
-export namespace PassportBurnedEvent {
-  export type InputTuple = [holder: AddressLike, tokenId: BigNumberish];
-  export type OutputTuple = [holder: string, tokenId: bigint];
-  export interface OutputObject {
-    holder: string;
-    tokenId: bigint;
-  }
-  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
-  export type Filter = TypedDeferredTopicFilter<Event>;
-  export type Log = TypedEventLog<Event>;
-  export type LogDescription = TypedLogDescription<Event>;
-}
-
 export namespace PassportMintedEvent {
   export type InputTuple = [
-    holder: AddressLike,
+    user: AddressLike,
     tokenId: BigNumberish,
     countryCode: string
   ];
   export type OutputTuple = [
-    holder: string,
+    user: string,
     tokenId: bigint,
     countryCode: string
   ];
   export interface OutputObject {
-    holder: string;
+    user: string;
     tokenId: bigint;
     countryCode: string;
   }
@@ -302,6 +310,19 @@ export namespace TransferEvent {
     from: string;
     to: string;
     tokenId: bigint;
+  }
+  export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
+  export type Filter = TypedDeferredTopicFilter<Event>;
+  export type Log = TypedEventLog<Event>;
+  export type LogDescription = TypedLogDescription<Event>;
+}
+
+export namespace WatchTimeUpdatedEvent {
+  export type InputTuple = [tokenId: BigNumberish, newTotal: BigNumberish];
+  export type OutputTuple = [tokenId: bigint, newTotal: bigint];
+  export interface OutputObject {
+    tokenId: bigint;
+    newTotal: bigint;
   }
   export type Event = TypedContractEvent<InputTuple, OutputTuple, OutputObject>;
   export type Filter = TypedDeferredTopicFilter<Event>;
@@ -352,7 +373,7 @@ export interface FanPassport extends BaseContract {
     event?: TCEvent
   ): Promise<this>;
 
-  MINT_STAKE: TypedContractMethod<[], [bigint], "view">;
+  addressToTokenId: TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
 
   approve: TypedContractMethod<
     [to: AddressLike, tokenId: BigNumberish],
@@ -362,17 +383,20 @@ export interface FanPassport extends BaseContract {
 
   balanceOf: TypedContractMethod<[owner: AddressLike], [bigint], "view">;
 
-  burnPassport: TypedContractMethod<[], [void], "nonpayable">;
-
   getApproved: TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
 
-  getStakedCountry: TypedContractMethod<
-    [holder: AddressLike],
-    [string],
+  getPassport: TypedContractMethod<
+    [user: AddressLike],
+    [
+      [FanPassport.PassportStructOutput, bigint] & {
+        passport: FanPassport.PassportStructOutput;
+        tokenId: bigint;
+      }
+    ],
     "view"
   >;
 
-  holderToTokenId: TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
+  hasPassport: TypedContractMethod<[user: AddressLike], [boolean], "view">;
 
   isApprovedForAll: TypedContractMethod<
     [owner: AddressLike, operator: AddressLike],
@@ -380,7 +404,11 @@ export interface FanPassport extends BaseContract {
     "view"
   >;
 
-  mintPassport: TypedContractMethod<[countryCode: string], [void], "payable">;
+  mint: TypedContractMethod<
+    [user: AddressLike, countryCode: string, confederation: string],
+    [bigint],
+    "nonpayable"
+  >;
 
   name: TypedContractMethod<[], [string], "view">;
 
@@ -391,11 +419,11 @@ export interface FanPassport extends BaseContract {
   passports: TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, bigint, boolean] & {
+      [string, string, bigint, bigint] & {
         countryCode: string;
-        stakedOKB: bigint;
+        confederation: string;
+        watchTimeSeconds: bigint;
         mintedAt: bigint;
-        active: boolean;
       }
     ],
     "view"
@@ -448,13 +476,19 @@ export interface FanPassport extends BaseContract {
     "nonpayable"
   >;
 
+  updateWatchTime: TypedContractMethod<
+    [tokenId: BigNumberish, additionalSeconds: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
+
   getFunction<T extends ContractMethod = ContractMethod>(
     key: string | FunctionFragment
   ): T;
 
   getFunction(
-    nameOrSignature: "MINT_STAKE"
-  ): TypedContractMethod<[], [bigint], "view">;
+    nameOrSignature: "addressToTokenId"
+  ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
   getFunction(
     nameOrSignature: "approve"
   ): TypedContractMethod<
@@ -466,17 +500,23 @@ export interface FanPassport extends BaseContract {
     nameOrSignature: "balanceOf"
   ): TypedContractMethod<[owner: AddressLike], [bigint], "view">;
   getFunction(
-    nameOrSignature: "burnPassport"
-  ): TypedContractMethod<[], [void], "nonpayable">;
-  getFunction(
     nameOrSignature: "getApproved"
   ): TypedContractMethod<[tokenId: BigNumberish], [string], "view">;
   getFunction(
-    nameOrSignature: "getStakedCountry"
-  ): TypedContractMethod<[holder: AddressLike], [string], "view">;
+    nameOrSignature: "getPassport"
+  ): TypedContractMethod<
+    [user: AddressLike],
+    [
+      [FanPassport.PassportStructOutput, bigint] & {
+        passport: FanPassport.PassportStructOutput;
+        tokenId: bigint;
+      }
+    ],
+    "view"
+  >;
   getFunction(
-    nameOrSignature: "holderToTokenId"
-  ): TypedContractMethod<[arg0: AddressLike], [bigint], "view">;
+    nameOrSignature: "hasPassport"
+  ): TypedContractMethod<[user: AddressLike], [boolean], "view">;
   getFunction(
     nameOrSignature: "isApprovedForAll"
   ): TypedContractMethod<
@@ -485,8 +525,12 @@ export interface FanPassport extends BaseContract {
     "view"
   >;
   getFunction(
-    nameOrSignature: "mintPassport"
-  ): TypedContractMethod<[countryCode: string], [void], "payable">;
+    nameOrSignature: "mint"
+  ): TypedContractMethod<
+    [user: AddressLike, countryCode: string, confederation: string],
+    [bigint],
+    "nonpayable"
+  >;
   getFunction(
     nameOrSignature: "name"
   ): TypedContractMethod<[], [string], "view">;
@@ -501,11 +545,11 @@ export interface FanPassport extends BaseContract {
   ): TypedContractMethod<
     [arg0: BigNumberish],
     [
-      [string, bigint, bigint, boolean] & {
+      [string, string, bigint, bigint] & {
         countryCode: string;
-        stakedOKB: bigint;
+        confederation: string;
+        watchTimeSeconds: bigint;
         mintedAt: bigint;
-        active: boolean;
       }
     ],
     "view"
@@ -558,6 +602,13 @@ export interface FanPassport extends BaseContract {
   getFunction(
     nameOrSignature: "transferOwnership"
   ): TypedContractMethod<[newOwner: AddressLike], [void], "nonpayable">;
+  getFunction(
+    nameOrSignature: "updateWatchTime"
+  ): TypedContractMethod<
+    [tokenId: BigNumberish, additionalSeconds: BigNumberish],
+    [void],
+    "nonpayable"
+  >;
 
   getEvent(
     key: "Approval"
@@ -581,13 +632,6 @@ export interface FanPassport extends BaseContract {
     OwnershipTransferredEvent.OutputObject
   >;
   getEvent(
-    key: "PassportBurned"
-  ): TypedContractEvent<
-    PassportBurnedEvent.InputTuple,
-    PassportBurnedEvent.OutputTuple,
-    PassportBurnedEvent.OutputObject
-  >;
-  getEvent(
     key: "PassportMinted"
   ): TypedContractEvent<
     PassportMintedEvent.InputTuple,
@@ -600,6 +644,13 @@ export interface FanPassport extends BaseContract {
     TransferEvent.InputTuple,
     TransferEvent.OutputTuple,
     TransferEvent.OutputObject
+  >;
+  getEvent(
+    key: "WatchTimeUpdated"
+  ): TypedContractEvent<
+    WatchTimeUpdatedEvent.InputTuple,
+    WatchTimeUpdatedEvent.OutputTuple,
+    WatchTimeUpdatedEvent.OutputObject
   >;
 
   filters: {
@@ -636,17 +687,6 @@ export interface FanPassport extends BaseContract {
       OwnershipTransferredEvent.OutputObject
     >;
 
-    "PassportBurned(address,uint256)": TypedContractEvent<
-      PassportBurnedEvent.InputTuple,
-      PassportBurnedEvent.OutputTuple,
-      PassportBurnedEvent.OutputObject
-    >;
-    PassportBurned: TypedContractEvent<
-      PassportBurnedEvent.InputTuple,
-      PassportBurnedEvent.OutputTuple,
-      PassportBurnedEvent.OutputObject
-    >;
-
     "PassportMinted(address,uint256,string)": TypedContractEvent<
       PassportMintedEvent.InputTuple,
       PassportMintedEvent.OutputTuple,
@@ -667,6 +707,17 @@ export interface FanPassport extends BaseContract {
       TransferEvent.InputTuple,
       TransferEvent.OutputTuple,
       TransferEvent.OutputObject
+    >;
+
+    "WatchTimeUpdated(uint256,uint256)": TypedContractEvent<
+      WatchTimeUpdatedEvent.InputTuple,
+      WatchTimeUpdatedEvent.OutputTuple,
+      WatchTimeUpdatedEvent.OutputObject
+    >;
+    WatchTimeUpdated: TypedContractEvent<
+      WatchTimeUpdatedEvent.InputTuple,
+      WatchTimeUpdatedEvent.OutputTuple,
+      WatchTimeUpdatedEvent.OutputObject
     >;
   };
 }

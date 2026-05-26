@@ -1,120 +1,194 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import ReactPlayer from "react-player";
-import { useAccount, useReadContract, useWriteContract } from "wagmi";
-import { getAddress } from "viem";
+import { useSession } from "next-auth/react";
 import { VideoPlayer } from "@/components/watch/VideoPlayer";
 import { FreeTimeCountdown } from "@/components/watch/FreeTimeCountdown";
+import { FundingModal } from "@/components/payments/FundingModal";
 import { DepositModal } from "@/components/watch/DepositModal";
-import { UnsignedVoucherModal } from "@/components/watch/UnsignedVoucherModal";
 import { SessionPanel } from "@/components/watch/SessionPanel";
-import { WatchReceipt } from "@/components/watch/WatchReceipt";
 import { ReactionBar } from "@/components/watch/ReactionBar";
 import { MatchTakes } from "@/components/watch/MatchTakes";
-import { useWatchSession } from "@/hooks/useWatchSession";
 import { useSessionStore } from "@/store/sessionStore";
-import { useFreeTime } from "@/hooks/useFreeTime";
-import { PROTOCOL } from "@/lib/constants/protocol";
-import { erc20Abi } from "@/lib/contracts/abis";
+import { useVARLock } from "@/hooks/useVARLock";
+import { FREE_SECONDS } from "@/lib/payments/micropayments";
 
 interface WatchClientProps {
   video: any;
 }
 
+/**
+ * WatchClient — Circle × X Layer billing engine.
+ *
+ * Free window: 120 seconds per user (FREE_SECONDS from micropayments.ts).
+ * Paid window: 0.001 USDC/sec via /api/stream/charge (Circle micropayments).
+ *
+ * Billing loop freeze conditions (ALL must be false to charge):
+ *   1. video.paused
+ *   2. document.hidden (tab not visible)
+ *   3. video.readyState < 3 (buffering)
+ *   4. varLocked (VAR review on-chain event)
+ *
+ * On insufficient balance: FundingModal (non-dismissable) blocks video.
+ * VAR lock: billing silently skips, video continues playing.
+ */
 export function WatchClient({ video }: WatchClientProps) {
-  const { address: userAddress } = useAccount();
-  const { remaining } = useFreeTime();
-  const session = useSessionStore();
+  const { data: session } = useSession();
+  const session_ = useSessionStore();
 
-  const [depositOpen, setDepositOpen] = useState(false);
-  const [receiptOpen, setReceiptOpen] = useState(false);
-  const [txHash] = useState<string | null>(null);
-  
-  const [playedSeconds, setPlayedSeconds] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isApproving, setIsApproving] = useState(false);
+  // VAR lock — watches BillingController events on X Layer
+  const matchId = video.match_id ?? "default-match";
+  const varLocked = useVARLock(matchId);
 
+  // Video state
   const playerRef = useRef<ReactPlayer | null>(null);
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
 
-  const creatorAddress = (video.profiles?.wallet_address || "0x0000000000000000000000000000000000000000") as `0x${string}`;
+  // Billing state
+  const [freeSecondsLeft, setFreeSecondsLeft] = useState(FREE_SECONDS);
+  const [showFundingModal, setShowFundingModal] = useState(false);
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const billingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const varLockedRef = useRef(varLocked);
 
-  // ── On-chain USDC allowance check ──────────────────────────────────────────
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
-    address: PROTOCOL.USDC_ADDRESS,
-    abi:     erc20Abi,
-    functionName: "allowance",
-    args:    userAddress ? [userAddress, PROTOCOL.VAULT_ADDRESS] : undefined,
-    query:   { enabled: !!userAddress },
-  });
-
-  const isOwner = userAddress && creatorAddress && getAddress(userAddress) === getAddress(creatorAddress);
-  const hasAllowance = allowance !== undefined && allowance > BigInt(0);
-  const isBilled = playedSeconds >= PROTOCOL.FREE_PREVIEW_SECONDS;
-
-  // Billing is active only if not owner, free tier expired, and allowance approved
-  const billingEnabled = !isOwner && isBilled && hasAllowance;
-
+  // Keep varLocked ref in sync (used inside interval closure)
   useEffect(() => {
-    if (userAddress && allowance !== undefined && allowance > BigInt(0) && depositOpen) {
-      setDepositOpen(false);
-      setIsPlaying(true);
-    }
-  }, [userAddress, allowance, depositOpen]);
+    varLockedRef.current = varLocked;
+  }, [varLocked]);
 
-  const { unsignedVoucher, resignLoading, handleResign, dismissUnsigned } = useWatchSession({
-    creatorAddress,
-    videoId: video.id,
-    videoElement,
-    enabled: !!billingEnabled,
-  });
+  const walletId = session?.user?.circleWalletId ?? null;
+  const walletAddress = session?.user?.walletAddress ?? null;
+  const isOwner =
+    session?.user?.id && video.profiles?.id === session.user.id;
+
+  // ── Billing loop ───────────────────────────────────────────────────────────
+  const startBillingLoop = useCallback(() => {
+    if (billingIntervalRef.current) return; // already running
+
+    billingIntervalRef.current = setInterval(async () => {
+      if (!videoElement) return;
+
+      // Freeze conditions
+      const shouldFreeze =
+        videoElement.paused ||
+        document.hidden ||
+        videoElement.readyState < 3 ||
+        varLockedRef.current;
+
+      if (shouldFreeze) return;
+
+      try {
+        const res = await fetch("/api/stream/charge", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            matchId,
+            creatorWalletId: video.profiles?.circle_wallet_id ?? null,
+            seconds: 1,
+          }),
+        });
+
+        const data = (await res.json()) as {
+          success?: boolean;
+          locked?: boolean;
+          remainingBalance?: number | null;
+        };
+
+        if (data.locked) {
+          // VAR lock from server — skip silently (event will update varLocked)
+          return;
+        }
+
+        if (!data.success) {
+          // Insufficient balance — pause and show funding modal
+          videoElement.pause();
+          videoElement.src = "";
+          videoElement.style.pointerEvents = "none";
+          setIsPlaying(false);
+          setShowFundingModal(true);
+
+          if (billingIntervalRef.current) {
+            clearInterval(billingIntervalRef.current);
+            billingIntervalRef.current = null;
+          }
+        }
+      } catch (err) {
+        // Network failure — skip tick, billing resumes next interval
+        console.error("[WatchClient] billing tick failed:", err);
+      }
+    }, 1_000);
+  }, [videoElement, matchId, video.profiles]);
+
+  const stopBillingLoop = useCallback(() => {
+    if (billingIntervalRef.current) {
+      clearInterval(billingIntervalRef.current);
+      billingIntervalRef.current = null;
+    }
+  }, []);
+
+  // ── Free window countdown ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!videoElement || isOwner) return;
+
+    const freeInterval = setInterval(() => {
+      if (videoElement.paused || document.hidden || videoElement.readyState < 3) return;
+
+      setFreeSecondsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(freeInterval);
+          // Free time expired — start billing loop
+          if (!isOwner && session?.user?.id) {
+            startBillingLoop();
+          } else if (!session?.user?.id) {
+            // Not signed in — show funding modal
+            videoElement.pause();
+            setIsPlaying(false);
+            setShowFundingModal(true);
+          }
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1_000);
+
+    return () => clearInterval(freeInterval);
+  }, [videoElement, isOwner, session?.user?.id, startBillingLoop]);
+
+  // Start billing immediately if free time was already consumed (e.g. page reload)
+  useEffect(() => {
+    if (freeSecondsLeft <= 0 && !isOwner && videoElement && session?.user?.id) {
+      startBillingLoop();
+    }
+    return stopBillingLoop;
+  }, [freeSecondsLeft, isOwner, videoElement, session?.user?.id, startBillingLoop, stopBillingLoop]);
+
+  // ── Resume stream after funding ─────────────────────────────────────────────
+  const handleFundingSuccess = useCallback(() => {
+    setShowFundingModal(false);
+
+    if (videoElement) {
+      videoElement.style.pointerEvents = "";
+      // Re-create video src to restart stream
+      const src = video.video_url;
+      videoElement.src = src;
+      videoElement.play().catch(console.error);
+    }
+    setIsPlaying(true);
+    startBillingLoop();
+  }, [videoElement, video.video_url, startBillingLoop]);
 
   const onReady = () => {
-    const internalPlayer = playerRef.current?.getInternalPlayer();
-    if (internalPlayer instanceof HTMLVideoElement) {
-      setVideoElement(internalPlayer);
+    const internal = playerRef.current?.getInternalPlayer();
+    if (internal instanceof HTMLVideoElement) {
+      setVideoElement(internal);
     }
   };
 
-  const onProgress = (state: { playedSeconds: number }) => {
-    const secs = Math.floor(state.playedSeconds);
-    setPlayedSeconds(secs);
+  // onProgress is kept for future use (e.g. session panel display)
+  const onProgress = (_state: { playedSeconds: number }) => {};
 
-    if (secs >= PROTOCOL.FREE_PREVIEW_SECONDS && !isOwner) {
-      const approved = allowance !== undefined && allowance > BigInt(0);
-      if (!approved) {
-        setIsPlaying(false);
-        setDepositOpen(true);
-      }
-    }
-  };
-
-  const { writeContractAsync } = useWriteContract();
-
-  const handleApprove = async () => {
-    try {
-      setIsApproving(true);
-      // Approve 100 USDC (6 decimals)
-      await writeContractAsync({
-        abi: erc20Abi,
-        address: PROTOCOL.USDC_ADDRESS,
-        functionName: "approve",
-        args: [PROTOCOL.VAULT_ADDRESS, BigInt(100_000_000)],
-      });
-      // Wait for tx propagation then refetch
-      await new Promise((resolve) => setTimeout(resolve, 3000));
-      await refetchAllowance();
-      setDepositOpen(false);
-      setIsPlaying(true);
-    } catch (err) {
-      console.error("USDC approval failed:", err);
-    } finally {
-      setIsApproving(false);
-    }
-  };
-
-  const remainingPreview = Math.max(0, PROTOCOL.FREE_PREVIEW_SECONDS - playedSeconds);
 
   return (
     <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-6 lg:grid-cols-[1fr_320px]">
@@ -127,60 +201,91 @@ export function WatchClient({ video }: WatchClientProps) {
             onReady={onReady}
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
-            onEnded={() => setReceiptOpen(true)}
+            onEnded={() => stopBillingLoop()}
             onBuffer={() => {}}
             onBufferEnd={() => {}}
             onProgress={onProgress}
           />
+
+          {/* HUD overlays */}
           <div className="absolute right-3 top-3 flex flex-col gap-2">
-            <FreeTimeCountdown remaining={remaining} />
-            {remainingPreview > 0 && (
-              <span className="rounded bg-amber-500/80 px-2 py-1 text-xs text-black font-semibold">
-                Preview: {remainingPreview}s
-              </span>
+            {freeSecondsLeft > 0 && !isOwner && (
+              <FreeTimeCountdown remaining={freeSecondsLeft} />
+            )}
+            {varLocked && (
+              <div
+                className="rounded-lg px-3 py-1.5 text-xs font-bold text-white"
+                style={{
+                  background: "rgba(234,69,96,0.9)",
+                  border: "1px solid rgba(234,69,96,0.4)",
+                  boxShadow: "0 0 12px rgba(234,69,96,0.5)",
+                }}
+              >
+                🔍 VAR Review — Billing Paused
+              </div>
             )}
           </div>
         </div>
+
         {isOwner && (
           <div className="bg-amber-500/20 text-amber-300 p-2 text-xs rounded text-center font-mono">
             You created this video — watching your own content is free.
           </div>
         )}
+
         <ReactionBar />
         <MatchTakes videoId={video.id} />
       </section>
+
       <aside className="space-y-4">
         <SessionPanel
-          totalSeconds={session.totalSeconds}
-          billableSeconds={session.billableSeconds}
-          cost={session.currentCost}
-          isPaused={session.isPaused}
+          totalSeconds={session_.totalSeconds}
+          billableSeconds={session_.billableSeconds}
+          cost={session_.currentCost}
+          isPaused={session_.isPaused}
         />
+
+        {/* USDC balance info for signed-in users */}
+        {walletId && (
+          <div
+            className="rounded-xl p-4 text-sm space-y-1"
+            style={{
+              background: "rgba(255,255,255,0.04)",
+              border: "1px solid rgba(255,255,255,0.08)",
+            }}
+          >
+            <p className="text-white/40 text-xs uppercase tracking-wider font-medium">Circle Wallet</p>
+            {walletAddress && (
+              <p className="font-mono text-white/60 text-xs truncate">
+                {walletAddress.slice(0, 8)}…{walletAddress.slice(-6)}
+              </p>
+            )}
+            <button
+              className="text-xs text-white/50 underline mt-1"
+              onClick={() => setShowDepositModal(true)}
+            >
+              Deposit USDC
+            </button>
+          </div>
+        )}
       </aside>
+
+      {/* Non-dismissable funding gate */}
+      {showFundingModal && (
+        <FundingModal
+          walletId={walletId}
+          walletAddress={walletAddress}
+          onFundingSuccess={handleFundingSuccess}
+        />
+      )}
+
+      {/* Optional on-chain USDC deposit modal */}
       <DepositModal
-        open={depositOpen}
-        isApproving={isApproving}
-        onClose={() => {
-          setDepositOpen(false);
-          setIsPlaying(false);
-        }}
-        onApprove={handleApprove}
+        open={showDepositModal}
+        isApproving={false}
+        onClose={() => setShowDepositModal(false)}
+        onApprove={() => setShowDepositModal(false)}
       />
-      {unsignedVoucher && (
-        <UnsignedVoucherModal
-          totalOwed={(Number(unsignedVoucher.rawTotalOwed) / 1_000_000).toFixed(4)}
-          onSign={handleResign}
-          onDismiss={dismissUnsigned}
-          loading={resignLoading}
-        />
-      )}
-      {receiptOpen && (
-        <WatchReceipt
-          summary={session.latestSummary}
-          txHash={txHash}
-          onClose={() => setReceiptOpen(false)}
-        />
-      )}
     </div>
   );
 }

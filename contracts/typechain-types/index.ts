@@ -50,8 +50,12 @@ export type { ReentrancyGuard } from "./@openzeppelin/contracts/utils/Reentrancy
 export { ReentrancyGuard__factory } from "./factories/@openzeppelin/contracts/utils/ReentrancyGuard__factory";
 export type { Strings } from "./@openzeppelin/contracts/utils/Strings";
 export { Strings__factory } from "./factories/@openzeppelin/contracts/utils/Strings__factory";
+export type { BillingController } from "./src/BillingController";
+export { BillingController__factory } from "./factories/src/BillingController__factory";
 export type { FanPassport } from "./src/FanPassport";
 export { FanPassport__factory } from "./factories/src/FanPassport__factory";
+export type { FanRewardsPool } from "./src/FanRewardsPool";
+export { FanRewardsPool__factory } from "./factories/src/FanRewardsPool__factory";
 export type { MockUSDC } from "./src/MockUSDC";
 export { MockUSDC__factory } from "./factories/src/MockUSDC__factory";
 export type { RoarBadges } from "./src/RoarBadges";
@@ -62,3 +66,5 @@ export type { IFanPassport } from "./src/VARSystem.sol/IFanPassport";
 export { IFanPassport__factory } from "./factories/src/VARSystem.sol/IFanPassport__factory";
 export type { VARSystem } from "./src/VARSystem.sol/VARSystem";
 export { VARSystem__factory } from "./factories/src/VARSystem.sol/VARSystem__factory";
+export type { WatchLeaderboard } from "./src/WatchLeaderboard";
+export { WatchLeaderboard__factory } from "./factories/src/WatchLeaderboard__factory";
