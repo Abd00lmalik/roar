@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { getSupabaseClient } from "@/lib/supabase/singleton";
 import { COUNTRY_MAP } from "@/lib/theme/countries";
+import { CountryFlag } from "@/components/ui/CountryFlag";
 
 export function CrowdRoarBanner() {
   const supabase = getSupabaseClient();
@@ -34,7 +35,8 @@ export function CrowdRoarBanner() {
     : "@TacticalGhost";
 
   // Determine top country (by count of profiles in the fetched list or default to FR)
-  let topCountryText = "France 🇫🇷";
+  let topCountryName = "France";
+  let topCountryCode = "FR";
   if (data?.profiles && data.profiles.length > 0) {
     const countryCounts: Record<string, number> = {};
     data.profiles.forEach((p: any) => {
@@ -53,7 +55,8 @@ export function CrowdRoarBanner() {
     if (bestCode) {
       const countryConfig = COUNTRY_MAP.get(bestCode);
       if (countryConfig) {
-        topCountryText = `${countryConfig.name} ${countryConfig.flag}`;
+        topCountryName = countryConfig.name;
+        topCountryCode = countryConfig.code;
       }
     }
   }
@@ -62,7 +65,10 @@ export function CrowdRoarBanner() {
     <div className="glass-panel flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
       <span>🔥 Crowd RoarTube</span>
       <span>👁 {Number(totalWatchSeconds).toLocaleString()} seconds watched today</span>
-      <span>Top Country: {topCountryText}</span>
+      <span className="flex items-center gap-1.5">
+        Top Country: {topCountryName}
+        <CountryFlag code={topCountryCode} className="w-5 h-3.5 object-cover rounded-sm shadow-sm inline-block" />
+      </span>
       <span>Top Creator: {topCreator}</span>
       <span>Pool: {Number(poolUsdc).toFixed(2)} USDC</span>
     </div>

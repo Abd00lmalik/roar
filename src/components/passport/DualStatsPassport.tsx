@@ -8,6 +8,7 @@ import { COUNTRY_MAP } from "@/lib/theme/countries";
 import { isMockMode } from "@/lib/contracts/addresses";
 import { useState } from "react";
 import { FootballButton } from "@/components/shared/FootballButton";
+import { CountryFlag } from "@/components/ui/CountryFlag";
 
 interface DualStatsPassportProps {
   profile: any;
@@ -89,7 +90,11 @@ export function DualStatsPassport({ profile }: DualStatsPassportProps) {
             <h2 className="font-display text-2xl font-bold tracking-wide text-floodlight">FAN PASSPORT 🛂</h2>
             <p className="font-mono text-xs text-chalk/50">{profile.wallet_address}</p>
           </div>
-          <span className="text-4xl" title={profile.country_name}>{flagEmoji}</span>
+          {profile.country_code ? (
+            <CountryFlag code={profile.country_code} className="w-12 h-8.5 object-cover rounded shadow-md select-none" />
+          ) : (
+            <span className="text-4xl" title={profile.country_name}>{flagEmoji}</span>
+          )}
         </div>
       </div>
 

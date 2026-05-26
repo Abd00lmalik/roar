@@ -9,6 +9,8 @@ import { useSession } from "next-auth/react";
 import { xLayerPublicClient } from "@/lib/xlayer/client";
 import { COUNTRIES } from "@/lib/theme/countries";
 import { formatEther } from "viem";
+import { useRef } from "react";
+import { CountryFlag } from "@/components/ui/CountryFlag";
 
 export default function UploadPage() {
   const { isConnected, address: connectedAddress } = useAccount();
@@ -22,6 +24,18 @@ export default function UploadPage() {
   const [category, setCategory] = useState("");
   const [tagsInput, setTagsInput] = useState("");
   const [associatedCountry, setAssociatedCountry] = useState("");
+  const [countrySelectOpen, setCountrySelectOpen] = useState(false);
+  const countrySelectRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (countrySelectRef.current && !countrySelectRef.current.contains(e.target as Node)) {
+        setCountrySelectOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
   
   // Loading & Balance state
   const [loading, setLoading] = useState(false);
@@ -288,22 +302,63 @@ export default function UploadPage() {
         </div>
 
         {/* Associated Country */}
+        {/* Associated Country */}
         <div className="space-y-1">
           <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">
             Associated Country
           </label>
-          <select 
-            value={associatedCountry} 
-            onChange={(e) => setAssociatedCountry(e.target.value)}
-            className="w-full rounded-lg bg-slate-900 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none cursor-pointer"
-          >
-            <option value="">All countries / General</option>
-            {COUNTRIES.map((t) => (
-              <option key={t.code} value={t.code}>
-                {t.flag} {t.name}
-              </option>
-            ))}
-          </select>
+          <div className="relative w-full" ref={countrySelectRef}>
+            <button
+              type="button"
+              onClick={() => setCountrySelectOpen(!countrySelectOpen)}
+              className="w-full rounded-lg bg-black/40 border border-white/10 p-3 text-white focus:border-white/20 transition-all outline-none cursor-pointer text-left flex items-center justify-between"
+            >
+              <span className="flex items-center gap-2">
+                {associatedCountry ? (
+                  <>
+                    <CountryFlag code={associatedCountry} className="w-5 h-3.5 object-cover rounded-sm shadow-sm inline-block" />
+                    <span>{COUNTRIES.find((c) => c.code === associatedCountry)?.name}</span>
+                  </>
+                ) : (
+                  <span>All countries / General</span>
+                )}
+              </span>
+              <span className="text-white/40 text-xs select-none">▼</span>
+            </button>
+
+            {countrySelectOpen && (
+              <div className="absolute left-0 right-0 mt-1 max-h-[220px] overflow-y-auto z-50 rounded border border-white/15 bg-slate-900 shadow-2xl p-1 space-y-0.5 custom-scrollbar">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAssociatedCountry("");
+                    setCountrySelectOpen(false);
+                  }}
+                  className={`w-full rounded p-2.5 text-xs text-left hover:bg-white/10 transition-colors flex items-center gap-2 cursor-pointer text-white ${
+                    !associatedCountry ? "bg-white/5 font-semibold" : ""
+                  }`}
+                >
+                  All countries / General
+                </button>
+                {COUNTRIES.filter(c => !c.code.startsWith("TBD") && c.confederation !== "PLAYOFF").map((t) => (
+                  <button
+                    key={t.code}
+                    type="button"
+                    onClick={() => {
+                      setAssociatedCountry(t.code);
+                      setCountrySelectOpen(false);
+                    }}
+                    className={`w-full rounded p-2.5 text-xs text-left hover:bg-white/10 transition-colors flex items-center gap-2 cursor-pointer text-white ${
+                      associatedCountry === t.code ? "bg-white/5 font-semibold text-[var(--country-accent)]" : ""
+                    }`}
+                  >
+                    <CountryFlag code={t.code} className="w-5 h-3.5 object-cover rounded-sm shadow-sm" />
+                    <span>{t.name}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="space-y-1 pt-2">

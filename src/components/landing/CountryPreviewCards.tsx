@@ -1,4 +1,5 @@
 import { COUNTRIES } from "@/lib/theme/countries";
+import { CountryFlag } from "@/components/ui/CountryFlag";
 
 export function CountryPreviewCards() {
   return (
@@ -6,13 +7,13 @@ export function CountryPreviewCards() {
       {COUNTRIES.slice(0, 8).map((country) => (
         <div
           key={country.code}
-          className="glass-panel rounded-lg px-3 py-2 text-sm"
+          className="glass-panel rounded-lg px-3 py-2 text-sm flex flex-col justify-between gap-1.5"
           style={{
             backgroundImage: `linear-gradient(120deg, ${country.gradientFrom}, ${country.gradientTo})`,
           }}
         >
-          <div className="font-semibold text-black">{country.flag}</div>
-          <div className="text-xs font-medium text-black/70">{country.name}</div>
+          <CountryFlag code={country.code} className="w-7 h-4.5 object-cover rounded-sm shadow-sm select-none" />
+          <div className="text-xs font-semibold text-black">{country.name}</div>
         </div>
       ))}
     </div>

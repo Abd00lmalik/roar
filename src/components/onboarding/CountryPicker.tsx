@@ -2,6 +2,7 @@
 
 import { COUNTRIES } from "@/lib/theme/countries";
 import { TrophyIcon } from "@/components/shared/TrophyIcon";
+import { CountryFlag } from "@/components/ui/CountryFlag";
 import type { CountryCode } from "@/types";
 
 export function CountryPicker({
@@ -26,7 +27,7 @@ export function CountryPicker({
               backgroundImage: `linear-gradient(135deg, ${country.gradientFrom}, ${country.gradientTo})`,
             }}
           >
-            <div className="mb-2 text-3xl">{country.flag}</div>
+            <CountryFlag code={country.code} className="mb-2 w-10 h-7 object-cover rounded shadow select-none" />
             <div className="font-semibold text-black">{country.name}</div>
             {active && (
               <div className="mt-2 inline-flex items-center gap-1 text-xs text-black">

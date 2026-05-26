@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useThemeStore } from "@/store/themeStore";
 import { COUNTRIES, CountryConfig } from "@/lib/theme/countries";
+import { CountryFlag } from "@/components/ui/CountryFlag";
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -69,14 +70,8 @@ export default function OnboardingPage() {
               }
             `}
           >
-            {/* FLAG EMOJI — large, this is the primary visual */}
-            <span
-              className="text-4xl leading-none select-none"
-              role="img"
-              aria-label={country.name}
-            >
-              {country.flag}
-            </span>
+            {/* FLAG IMAGE — Custom FlagCDN renderer to support Windows correctly */}
+            <CountryFlag code={country.code} className="w-14 h-10 object-cover rounded shadow-md select-none" />
 
             {/* Country name — small subtitle */}
             <span className="text-white/70 text-[10px] font-medium text-center leading-tight max-w-full truncate">
@@ -89,8 +84,9 @@ export default function OnboardingPage() {
       {/* Confirm Selection CTA */}
       {selected && (
         <div className="mt-8 flex flex-col items-center gap-2 animate-fade-in">
-          <p className="text-white/70 text-xs font-mono">
-            Selected: <span className="text-[var(--country-accent)] font-bold">{selected.name} {selected.flag}</span>
+          <p className="text-white/70 text-xs font-mono flex items-center gap-1.5">
+            Selected: <span className="text-[var(--country-accent)] font-bold">{selected.name}</span>
+            <CountryFlag code={selected.code} className="w-5 h-3.5 object-cover rounded-sm shadow-sm inline-block" />
           </p>
           <button
             onClick={handleConfirm}
