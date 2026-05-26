@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { FeedClient } from "./FeedClient";
+import { seededVideos } from "@/lib/mockData";
 
 export default async function FeedPage() {
   const supabase = createClient();
 
   if (!supabase) {
-    return <FeedClient initialVideos={[]} />;
+    return <FeedClient initialVideos={seededVideos} />;
   }
 
   const { data: videos } = await supabase
@@ -13,5 +14,7 @@ export default async function FeedPage() {
     .select("*, profiles(*)")
     .order("created_at", { ascending: false });
 
-  return <FeedClient initialVideos={videos ?? []} />;
+  const displayVideos = videos && videos.length > 0 ? videos : seededVideos;
+
+  return <FeedClient initialVideos={displayVideos} />;
 }

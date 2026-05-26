@@ -31,41 +31,122 @@ export const seededProfiles: Profile[] = [
   },
 ];
 
-export const seededVideos: Video[] = [
+export const seededVideos: any[] = [
   {
-    id: "aaaaaaaa-0000-0000-0000-000000000001",
+    id: "demo-video-001",
     owner_profile_id: "11111111-0000-0000-0000-000000000003",
     owner_handle: "GhanaStand",
     owner_country_code: "GH",
-    title: "Ghana vs Brazil: The Midfield Battle",
-    description: "A deep dive into the midfield chess match.",
-    video_url:
-      "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-    thumbnail_url: "https://picsum.photos/seed/ngbr/640/360",
-    duration_seconds: 847,
-    category: "Tactical Breakdowns",
-    country_tags: ["GH", "BR"],
+    title: "[DEMO] UEFA Qualifier Highlights — Group A",
+    description: "Best goals and moments from the 2026 World Cup UEFA qualifiers.",
+    video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    thumbnail_url: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=640&q=80",
+    category: "highlights",
+    country_tags: ["DE", "UEFA", "QUALIFIERS", "GOALS"],
     content_type: "long",
+    duration_seconds: 60, // 1 minute
+    is_demo: true,
+    is_paid: true,
     total_watch_seconds: 12400,
     total_billable_seconds: 8200,
+    profiles: {
+      id: "11111111-0000-0000-0000-000000000003",
+      circle_wallet_id: "dummy-creator-circle-id-1",
+      wallet_address: "0x0000000000000000000000000000000000000003",
+    }
   },
   {
-    id: "aaaaaaaa-0000-0000-0000-000000000005",
+    id: "demo-video-002",
     owner_profile_id: "11111111-0000-0000-0000-000000000003",
     owner_handle: "GhanaStand",
-    owner_country_code: "EN",
-    title: "England Fans After the Final Whistle",
-    description: "Pure emotion from the stands after a dramatic equalizer.",
-    video_url:
-      "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4",
-    thumbnail_url: "https://picsum.photos/seed/enfans/640/360",
-    duration_seconds: 92,
-    category: "Fan Reactions",
-    country_tags: ["EN"],
-    content_type: "short",
+    owner_country_code: "GH",
+    title: "[DEMO] CONMEBOL Road to 2026 — Brazil",
+    description: "Brazil's qualification journey through South America.",
+    video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    thumbnail_url: "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=640&q=80",
+    category: "documentary",
+    country_tags: ["BR", "CONMEBOL", "BRAZIL", "QUALIFICATION"],
+    content_type: "long",
+    duration_seconds: 120, // 2 minutes
+    is_demo: true,
+    is_paid: true,
+    total_watch_seconds: 9800,
+    total_billable_seconds: 6400,
+    profiles: {
+      id: "11111111-0000-0000-0000-000000000003",
+      circle_wallet_id: "dummy-creator-circle-id-1",
+      wallet_address: "0x0000000000000000000000000000000000000003",
+    }
+  },
+  {
+    id: "demo-video-003",
+    owner_profile_id: "11111111-0000-0000-0000-000000000003",
+    owner_handle: "GhanaStand",
+    owner_country_code: "GH",
+    title: "[DEMO] Fan Culture — Supporter Stories",
+    description: "What the World Cup means to fans around the globe.",
+    video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    thumbnail_url: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=640&q=80",
+    category: "culture",
+    country_tags: ["ES", "FANS", "CULTURE", "WORLDCUP"],
+    content_type: "long",
+    duration_seconds: 180, // 3 minutes
+    is_demo: true,
+    is_paid: true,
     total_watch_seconds: 15600,
     total_billable_seconds: 11200,
+    profiles: {
+      id: "11111111-0000-0000-0000-000000000003",
+      circle_wallet_id: "dummy-creator-circle-id-1",
+      wallet_address: "0x0000000000000000000000000000000000000003",
+    }
   },
+  {
+    id: "demo-video-004",
+    owner_profile_id: "11111111-0000-0000-0000-000000000003",
+    owner_handle: "GhanaStand",
+    owner_country_code: "GH",
+    title: "[DEMO] AFC Qualifiers — Japan vs South Korea",
+    description: "The classic Asian rivalry in World Cup qualification.",
+    video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
+    thumbnail_url: "https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=640&q=80",
+    category: "highlights",
+    country_tags: ["JP", "AFC", "JAPAN", "KOREA"],
+    content_type: "long",
+    duration_seconds: 300, // 5 minutes
+    is_demo: true,
+    is_paid: true,
+    total_watch_seconds: 8700,
+    total_billable_seconds: 5200,
+    profiles: {
+      id: "11111111-0000-0000-0000-000000000003",
+      circle_wallet_id: "dummy-creator-circle-id-1",
+      wallet_address: "0x0000000000000000000000000000000000000003",
+    }
+  },
+  {
+    id: "demo-video-005",
+    owner_profile_id: "11111111-0000-0000-0000-000000000003",
+    owner_handle: "GhanaStand",
+    owner_country_code: "GH",
+    title: "[DEMO] CAF Playoffs — Africa's Final Spots",
+    description: "Drama from the African confederation playoff round.",
+    video_url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+    thumbnail_url: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=640&q=80",
+    category: "highlights",
+    country_tags: ["MA", "CAF", "AFRICA", "PLAYOFFS"],
+    content_type: "long",
+    duration_seconds: 600, // 10 minutes
+    is_demo: true,
+    is_paid: true,
+    total_watch_seconds: 14200,
+    total_billable_seconds: 9600,
+    profiles: {
+      id: "11111111-0000-0000-0000-000000000003",
+      circle_wallet_id: "dummy-creator-circle-id-1",
+      wallet_address: "0x0000000000000000000000000000000000000003",
+    }
+  }
 ];
 
 export const badgesSeed = [
