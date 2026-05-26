@@ -38,6 +38,10 @@ export default function OnboardingPage() {
     router.push("/stadium");
   };
 
+  const displayTeams = COUNTRIES.filter(
+    (c) => !c.code.startsWith("TBD") && c.confederation !== "PLAYOFF"
+  );
+
   return (
     <div className="min-h-screen bg-[#080810] flex flex-col items-center px-4 py-12">
       {/* Header */}
@@ -51,24 +55,31 @@ export default function OnboardingPage() {
       </div>
 
       {/* Grid containing all 48 qualifiers */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2 w-full max-w-4xl max-h-[60vh] overflow-y-auto pr-1">
-        {COUNTRIES.map((country) => (
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 w-full max-w-3xl mx-auto px-4 max-h-[60vh] overflow-y-auto pr-1">
+        {displayTeams.map((country) => (
           <button
             key={country.code}
             onClick={() => handleCountrySelect(country)}
             className={`
-              flex flex-col items-center justify-center gap-1.5
-              p-3 rounded-xl border transition-all duration-200 cursor-pointer
+              flex flex-col items-center justify-center gap-2 p-3 rounded-2xl
+              border transition-all duration-200 aspect-square cursor-pointer
               ${selected?.code === country.code
-                ? "border-[var(--country-accent)] bg-white/[0.12] scale-105 shadow-[0_0_20px_rgba(255,206,0,0.15)]"
-                : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:border-white/[0.15]"
+                ? "border-[var(--country-accent,#FFCE00)] bg-white/[0.12] scale-105 shadow-[0_0_20px_var(--country-accent,#FFCE00)33]"
+                : "border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.08] hover:scale-[1.02]"
               }
             `}
           >
-            {/* FLAG EMOJI — large and prominent */}
-            <span className="text-4xl leading-none select-none">{country.flag}</span>
-            {/* Country name — small and centered */}
-            <span className="text-white text-[10px] font-semibold text-center leading-tight tracking-wide line-clamp-1">
+            {/* FLAG EMOJI — large, this is the primary visual */}
+            <span
+              className="text-4xl leading-none select-none"
+              role="img"
+              aria-label={country.name}
+            >
+              {country.flag}
+            </span>
+
+            {/* Country name — small subtitle */}
+            <span className="text-white/70 text-[10px] font-medium text-center leading-tight max-w-full truncate">
               {country.name}
             </span>
           </button>

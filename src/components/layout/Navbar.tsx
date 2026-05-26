@@ -25,11 +25,6 @@ export function Navbar() {
   const { data: session } = useSession();
   const [circleBalance, setCircleBalance] = useState<string>("0.00");
 
-  const hideNavRoutes = ["/", "/onboarding"];
-  if (hideNavRoutes.includes(pathname)) return null;
-
-  const walletAddress = connectedAddress ?? session?.user?.walletAddress ?? null;
-
   // Fetch Circle wallet balance when connected browser wallet is not active
   useEffect(() => {
     if (!connectedAddress && session?.user?.walletAddress) {
@@ -41,6 +36,11 @@ export function Navbar() {
         .catch(() => {});
     }
   }, [connectedAddress, session?.user?.walletAddress]);
+
+  const hideNavRoutes = ["/", "/onboarding"];
+  if (hideNavRoutes.includes(pathname)) return null;
+
+  const walletAddress = connectedAddress ?? session?.user?.walletAddress ?? null;
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-stadium/90 backdrop-blur-xl px-6 py-4">

@@ -17,7 +17,7 @@ export const COUNTRIES: CountryConfig[] = [
   { code: "PT", name: "Portugal", flag: "🇵🇹", confederation: "UEFA", gradientFrom: "#006600", gradientVia: "#FF0000", gradientTo: "#FFD700", accent: "#FFD700" },
   { code: "NL", name: "Netherlands", flag: "🇳🇱", confederation: "UEFA", gradientFrom: "#AE1C28", gradientVia: "#FFFFFF", gradientTo: "#21468B", accent: "#FF4F00" },
   { code: "BE", name: "Belgium", flag: "🇧🇪", confederation: "UEFA", gradientFrom: "#000000", gradientVia: "#FDDA0D", gradientTo: "#EF3340", accent: "#EF3340" },
-  { code: "EN", name: "England", flag: "🏴", confederation: "UEFA", gradientFrom: "#FFFFFF", gradientVia: "#CF0820", gradientTo: "#FFFFFF", accent: "#CF0820" },
+  { code: "EN", name: "England", flag: "🇬🇧", confederation: "UEFA", gradientFrom: "#FFFFFF", gradientVia: "#CF0820", gradientTo: "#FFFFFF", accent: "#CF0820" },
   { code: "HR", name: "Croatia", flag: "🇭🇷", confederation: "UEFA", gradientFrom: "#FF0000", gradientVia: "#FFFFFF", gradientTo: "#171796", accent: "#FF0000" },
   { code: "AT", name: "Austria", flag: "🇦🇹", confederation: "UEFA", gradientFrom: "#ED2939", gradientVia: "#FFFFFF", gradientTo: "#ED2939", accent: "#ED2939" },
   { code: "HU", name: "Hungary", flag: "🇭🇺", confederation: "UEFA", gradientFrom: "#CE1126", gradientVia: "#FFFFFF", gradientTo: "#477050", accent: "#CE1126" },
