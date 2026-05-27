@@ -262,33 +262,23 @@ export async function POST(req: NextRequest) {
       let onChainAddress: `0x${string}` | null = null;
       const { data: latestProfile } = await supabase
         .from("profiles")
-        .select("wallet_address, passport_token_id")
+        .select("wallet_address")
         .eq("id", userId)
         .maybeSingle();
       onChainAddress = latestProfile?.wallet_address as `0x${string}` | null;
 
       if (onChainAddress) {
-        try {
-          const tokenIdRaw = await xLayerPublicClient.readContract({
-            address: ADDRESSES.FAN_PASSPORT,
-            abi: FAN_PASSPORT_ABI,
-            functionName: "addressToTokenId",
-            args: [onChainAddress],
-          });
-          const tokenId = Number(tokenIdRaw);
-          if (tokenId > 0) {
-            const walletClient = getXLayerWalletClient();
-            await walletClient.writeContract({
-              address: ADDRESSES.FAN_PASSPORT,
-              abi: FAN_PASSPORT_ABI,
-              functionName: "updateWatchTime",
-              args: [BigInt(tokenId), BigInt(tracker.seconds)],
-            });
-            console.log(`[stream/charge] Watch-time flushed: +${tracker.seconds}s for tokenId=${tokenId}`);
-          }
-        } catch (flushErr) {
-          console.error("[stream/charge] Watch-time flush failed (non-fatal):", flushErr);
-        }
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+        fetch(`${appUrl}/api/xlayer/sync-watch-time`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userAddress: onChainAddress,
+            secondsWatched: tracker.seconds,
+          }),
+        }).catch((err) => {
+          console.error("[stream/charge] Async watch-time sync fetch failed:", err);
+        });
       }
 
       tracker.seconds = 0;
