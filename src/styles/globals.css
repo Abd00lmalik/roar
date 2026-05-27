@@ -80,9 +80,21 @@ body {
   );
 }
 
-/* Floodlight effect overlay */
+/* Floodlight effect overlay — tinted with the active country accent */
 .stadium-floodlight {
-  background: radial-gradient(ellipse at top, rgba(255, 255, 255, 0.03) 0%, transparent 65%);
+  background:
+    /* Top glow — accent colour of the selected nation */
+    radial-gradient(
+      ellipse 120% 38% at 50% -8%,
+      color-mix(in srgb, var(--country-accent, #FFCE00) 16%, transparent) 0%,
+      transparent 100%
+    ),
+    /* Bottom-corner ambient — primary gradient colour */
+    radial-gradient(
+      ellipse 70% 22% at 92% 105%,
+      color-mix(in srgb, var(--country-from, #080810) 10%, transparent) 0%,
+      transparent 100%
+    );
 }
 
 /* Glow-enhanced CTA buttons */
