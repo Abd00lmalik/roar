@@ -12,9 +12,9 @@ type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-gradient-to-r from-yellow-500 to-amber-400 text-black font-semibold",
+    "bg-[var(--country-accent,#FFCE00)] text-black font-semibold hover:brightness-110 shadow-[0_0_20px_rgba(255,206,0,0.15)]",
   secondary:
-    "glass-panel border border-amber-300/40 text-amber-200",
+    "glass-panel border border-[var(--country-accent,#FFCE00)]/45 text-[var(--country-accent,#FFCE00)] hover:bg-white/[0.04]",
   danger: "bg-red-600/90 text-white",
 };
 

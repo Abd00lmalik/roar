@@ -38,15 +38,20 @@ export function FundingModal({ onFundingSuccess, walletId, walletAddress }: Fund
     setStep("pending");
 
     try {
-      const res = await fetch("/api/payments/fund", {
+      const res = await fetch("/api/wallet/fund", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wallet_id: walletId, amount_usdc: amountNum }),
+        body: JSON.stringify({ amountUSDC: amountNum }),
       });
 
       if (!res.ok) {
         const { error: errMsg } = (await res.json().catch(() => ({}))) as { error?: string };
         throw new Error(errMsg ?? "Funding request failed");
+      }
+
+      const data = await res.json();
+      if (!data.success) {
+        throw new Error(data.error ?? "Funding failed");
       }
 
       setStep("success");
@@ -198,7 +203,7 @@ export function FundingModal({ onFundingSuccess, walletId, walletAddress }: Fund
 
           {/* Info footer */}
           <div
-            className="rounded-xl p-3 text-xs space-y-1"
+            className="rounded-xl p-3 text-xs space-y-2"
             style={{ background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.05)" }}
           >
             <p className="text-white/40 font-semibold mb-2">Revenue split on every second:</p>
@@ -215,6 +220,16 @@ export function FundingModal({ onFundingSuccess, walletId, walletAddress }: Fund
                 <p className="text-white font-mono font-bold">5%</p>
                 <p className="text-white/40">Treasury</p>
               </div>
+            </div>
+            <div className="pt-2 border-t border-white/5 text-center">
+              <a
+                href="https://faucet.circle.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-white/60 hover:text-white underline font-semibold transition-all"
+              >
+                Go to Circle Faucet page ↗
+              </a>
             </div>
           </div>
         </div>

@@ -154,7 +154,7 @@ export default function UploadPage() {
             </h3>
             <ol className="space-y-2.5 text-white/80 text-sm">
               <li className="flex items-start gap-2">
-                <span className="text-yellow-400 font-bold">1.</span>
+                <span className="text-[var(--country-accent,#FFCE00)] font-bold">1.</span>
                 <span className="flex-1">
                   Copy your wallet address:
                   <div className="mt-1 flex items-center gap-2">
@@ -171,11 +171,11 @@ export default function UploadPage() {
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-yellow-400 font-bold">2.</span>
+                <span className="text-[var(--country-accent,#FFCE00)] font-bold">2.</span>
                 <span>Go to the X Layer faucet and paste your address.</span>
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-yellow-400 font-bold">3.</span>
+                <span className="text-[var(--country-accent,#FFCE00)] font-bold">3.</span>
                 <span>Return here once received (takes ~30 seconds).</span>
               </li>
             </ol>
@@ -186,7 +186,7 @@ export default function UploadPage() {
               href="https://www.okx.com/xlayer/faucet"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full py-3.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-95 text-sm inline-block shadow-lg"
+              className="w-full py-3.5 bg-[var(--country-accent,#FFCE00)] hover:brightness-110 text-black font-bold rounded-xl transition-all hover:scale-[1.02] active:scale-95 text-sm inline-block shadow-lg text-center"
             >
               Get Free OKB from Faucet →
             </a>

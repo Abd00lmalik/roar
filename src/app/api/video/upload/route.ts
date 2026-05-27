@@ -32,12 +32,43 @@ export async function POST(req: NextRequest) {
     // 3. Save to database
     const supabase = createSupabaseServerClient();
     if (supabase) {
+      let finalVideoUrl = MOCK_VIDEO_URL;
+      const file = formData.get("file") as File | null;
+
+      if (file && file.size > 0) {
+        try {
+          const fileExt = file.name.split(".").pop() || "mp4";
+          const fileName = `${crypto.randomUUID()}.${fileExt}`;
+          const { data: uploadData, error: uploadError } = await supabase
+            .storage
+            .from("videos")
+            .upload(fileName, file, {
+              contentType: file.type,
+              cacheControl: "3600",
+            });
+
+          if (uploadError) {
+            console.warn("[upload api] Storage upload failed, falling back to mock:", uploadError.message);
+          } else {
+            const { data: publicUrlData } = supabase
+              .storage
+              .from("videos")
+              .getPublicUrl(fileName);
+            if (publicUrlData?.publicUrl) {
+              finalVideoUrl = publicUrlData.publicUrl;
+            }
+          }
+        } catch (storageErr) {
+          console.warn("[upload api] Storage upload error, falling back to mock:", storageErr);
+        }
+      }
+
       const { error } = await supabase.from("videos").insert({
         id,
         owner_profile_id: session.user.id,
         title: title || "Untitled Match Video",
         description: description || "",
-        video_url: MOCK_VIDEO_URL,
+        video_url: finalVideoUrl,
         thumbnail_url: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800",
         duration_seconds: 180,
         category: category || "highlights",
@@ -45,6 +76,7 @@ export async function POST(req: NextRequest) {
         content_type: "long",
         status: "active",
         is_paid: true,
+        is_demo: false,
       });
 
       if (error) {

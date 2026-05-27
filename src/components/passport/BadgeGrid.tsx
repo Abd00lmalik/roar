@@ -27,7 +27,7 @@ export function BadgeGrid({ badges = [] }: BadgeGridProps) {
       {badges.map((badge) => (
         <div
           key={badge.id}
-          className={`glass-panel p-3 text-center ${badge.claimed ? "border-yellow-400/70" : ""}`}
+          className={`glass-panel p-3 text-center ${badge.claimed ? "border-[var(--country-accent,#FFCE00)]/70 shadow-[0_0_15px_var(--country-accent,#FFCE00)22]" : ""}`}
         >
           <div className="text-2xl">{badge.icon}</div>
           <p className="mt-1 text-sm font-semibold">{badge.name}</p>

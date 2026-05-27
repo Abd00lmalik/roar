@@ -23,8 +23,8 @@
   --text-muted:     rgba(255, 255, 255, 0.4);
 
   /* Glows */
-  --glow-accent: 0 0 30px rgba(255, 204, 0, 0.12);
-  --glow-strong: 0 0 50px rgba(255, 204, 0, 0.25);
+  --glow-accent: 0 0 30px color-mix(in srgb, var(--country-accent, #FFCE00) 15%, transparent);
+  --glow-strong: 0 0 50px color-mix(in srgb, var(--country-accent, #FFCE00) 30%, transparent);
 }
 
 html,
@@ -80,20 +80,36 @@ body {
   );
 }
 
-/* Floodlight effect overlay — tinted with the active country accent */
+/* Floodlight effect overlay — tinted with the active country accent and flag base gradient */
 .stadium-floodlight {
-  background:
+  min-height: 100vh;
+  position: relative;
+  background-attachment: fixed;
+  background-image:
     /* Top glow — accent colour of the selected nation */
     radial-gradient(
-      ellipse 120% 38% at 50% -8%,
-      color-mix(in srgb, var(--country-accent, #FFCE00) 16%, transparent) 0%,
+      ellipse 80% 40% at 50% 0%,
+      color-mix(in srgb, var(--country-accent, #FFCE00) 18%, transparent) 0%,
       transparent 100%
     ),
-    /* Bottom-corner ambient — primary gradient colour */
+    /* Soft Bottom-right ambient glow in the 'to' color */
     radial-gradient(
-      ellipse 70% 22% at 92% 105%,
-      color-mix(in srgb, var(--country-from, #080810) 10%, transparent) 0%,
+      ellipse 50% 50% at 100% 100%,
+      color-mix(in srgb, var(--country-to, #08080c) 15%, transparent) 0%,
       transparent 100%
+    ),
+    /* Soft Bottom-left ambient glow in the 'from' color */
+    radial-gradient(
+      ellipse 50% 50% at 0% 100%,
+      color-mix(in srgb, var(--country-from, #0d0e15) 15%, transparent) 0%,
+      transparent 100%
+    ),
+    /* Base linear gradient mixing the country flag colors with deep stadium black */
+    linear-gradient(
+      150deg,
+      color-mix(in srgb, var(--country-from, #0a0a0f) 8%, #030305) 0%,
+      color-mix(in srgb, var(--country-via, #0a0a0f) 5%, #030305) 50%,
+      color-mix(in srgb, var(--country-to, #0a0a0f) 8%, #030305) 100%
     );
 }
 

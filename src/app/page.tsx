@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { StadiumBackground } from "@/components/landing/StadiumBackground";
+import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
 
 export default function HomePage() {
   const router = useRouter();
@@ -13,12 +14,9 @@ export default function HomePage() {
       
       <div className="relative z-10 flex flex-col items-center gap-6 px-4">
         {/* Logo */}
-        <h1 
-          className="text-6xl md:text-8xl font-black text-white tracking-tight"
-          style={{ fontFamily: "var(--font-display), sans-serif" }}
-        >
-          <span style={{ color: "var(--country-accent, #FFCC00)" }}>Roar</span>Tube
-        </h1>
+        <div className="flex justify-center mb-2">
+          <RoarTubeLogo height={80} />
+        </div>
         
         <p className="text-white/70 text-lg text-center max-w-sm font-medium">
           Where football attention becomes creator revenue.

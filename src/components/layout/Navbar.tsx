@@ -10,6 +10,7 @@ import { xLayerPublicClient } from "@/lib/xlayer/client";
 import { formatEther } from "viem";
 
 import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
+import { useWalletBalance } from "@/hooks/useWalletBalance";
 
 const links = [
   { href: "/stadium", label: "Stadium Feed 🏟️" },
@@ -23,19 +24,8 @@ export function Navbar() {
   const pathname = usePathname();
   const { address: connectedAddress, isConnected } = useAccount();
   const { data: session } = useSession();
-  const [circleBalance, setCircleBalance] = useState<string>("0.00");
 
-  // Fetch Circle wallet balance when connected browser wallet is not active
-  useEffect(() => {
-    if (!connectedAddress && session?.user?.walletAddress) {
-      xLayerPublicClient
-        .getBalance({ address: session.user.walletAddress as `0x${string}` })
-        .then((bal) => {
-          setCircleBalance(Number(formatEther(bal)).toFixed(4));
-        })
-        .catch(() => {});
-    }
-  }, [connectedAddress, session?.user?.walletAddress]);
+  const { balance: circleUsdcBalance } = useWalletBalance(session?.user?.circleWalletId ?? null);
 
   const hideNavRoutes = ["/", "/onboarding"];
   if (hideNavRoutes.includes(pathname)) return null;
@@ -58,7 +48,7 @@ export function Navbar() {
               href={link.href}
               className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 pathname === link.href
-                  ? "bg-white/10 text-white"
+                  ? "bg-white/10 text-[var(--country-accent,#FFCE00)] font-bold"
                   : "text-white/70 hover:text-white hover:bg-white/5"
               }`}
             >
@@ -70,10 +60,21 @@ export function Navbar() {
         {/* Wallet info / ConnectButton */}
         <div className="flex items-center gap-3">
           {walletAddress && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-xl text-xs">
-              <span className="text-[var(--country-accent,#FFCC00)] font-mono font-semibold">
-                {!connectedAddress ? `${circleBalance} OKB (Circle)` : "Wallet Connected"}
-              </span>
+            <div className="hidden sm:flex flex-col items-end px-3 py-1 bg-white/5 border border-white/10 rounded-xl text-[11px] font-medium leading-tight">
+              {!connectedAddress ? (
+                <>
+                  <span className="text-[var(--country-accent,#FFCE00)] font-mono font-bold">
+                    {session?.user?.walletAddress ? `${session.user.walletAddress.slice(0, 6)}…${session.user.walletAddress.slice(-4)}` : "No Wallet"}
+                  </span>
+                  <span className="text-white/60 font-mono text-[9px] mt-0.5">
+                    {circleUsdcBalance !== null ? `${circleUsdcBalance.toFixed(2)} USDC` : "Loading balance…"}
+                  </span>
+                </>
+              ) : (
+                <span className="text-[var(--country-accent,#FFCE00)] font-mono font-semibold py-0.5">
+                  Wallet Connected
+                </span>
+              )}
             </div>
           )}
           <ConnectButton chainStatus="icon" showBalance={false} />

@@ -48,6 +48,25 @@ export default function AdminPage() {
     },
   });
 
+  const nukeMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch("/api/admin/nuke-demos?key=roartube-admin-2026", {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete demo videos");
+      return data;
+    },
+    onSuccess: (data) => {
+      alert(data.message || "Successfully deleted demo videos!");
+      queryClient.invalidateQueries({ queryKey: ["admin-flagged-videos"] });
+      window.location.reload();
+    },
+    onError: (err: any) => {
+      alert(err.message);
+    },
+  });
+
   const totalWatchSeconds = stats?.total_watch_seconds ?? 0;
   const totalBillableSeconds = stats?.total_billable_seconds ?? 0;
   const totalVolumeUsdc = stats?.total_volume_usdc ?? 0;
@@ -56,7 +75,20 @@ export default function AdminPage() {
 
   return (
     <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-6">
-      <h1 className="font-display text-4xl font-bold">RoarTube Admin Panel</h1>
+      <div className="flex justify-between items-center flex-wrap gap-4">
+        <h1 className="font-display text-4xl font-bold">RoarTube Admin Panel</h1>
+        <button
+          onClick={() => {
+            if (confirm("Are you sure you want to delete all demo videos? This cannot be undone.")) {
+              nukeMutation.mutate();
+            }
+          }}
+          disabled={nukeMutation.isPending}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-sm transition-all cursor-pointer"
+        >
+          {nukeMutation.isPending ? "Deleting Demo Videos..." : "Delete All Demo Videos"}
+        </button>
+      </div>
       <section className="glass-panel grid gap-2 p-4 text-sm md:grid-cols-2">
         <p>Total Watch Seconds: {Number(totalWatchSeconds).toLocaleString()}</p>
         <p>Billable Seconds: {Number(totalBillableSeconds).toLocaleString()}</p>

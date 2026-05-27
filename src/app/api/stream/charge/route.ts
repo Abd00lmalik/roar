@@ -7,6 +7,8 @@ import { ADDRESSES, contractsConfigured } from "@/lib/xlayer/addresses";
 import { BILLING_CONTROLLER_ABI, FAN_PASSPORT_ABI } from "@/lib/xlayer/abis";
 import { initiateDeveloperControlledWalletsClient } from "@circle-fin/developer-controlled-wallets";
 import { COST_PER_SECOND_USDC, SPLIT } from "@/lib/payments/micropayments";
+import { getCircleDepositAddress } from "@/lib/payments/wallet";
+import crypto from "crypto";
 
 /**
  * POST /api/stream/charge
@@ -54,18 +56,19 @@ export async function POST(req: NextRequest) {
     let circleWalletId = session?.user?.circleWalletId;
 
     const supabase = createSupabaseServerClient();
+    if (!supabase) {
+      return NextResponse.json({ error: "Supabase client not available" }, { status: 500 });
+    }
 
     if (!userId && body.walletAddress) {
-      if (supabase) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("id, circle_wallet_id")
-          .eq("wallet_address", body.walletAddress)
-          .maybeSingle();
-        if (profile) {
-          userId = profile.id;
-          circleWalletId = profile.circle_wallet_id;
-        }
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, circle_wallet_id")
+        .eq("wallet_address", body.walletAddress)
+        .maybeSingle();
+      if (profile) {
+        userId = profile.id;
+        circleWalletId = profile.circle_wallet_id;
       }
     }
 
@@ -87,54 +90,160 @@ export async function POST(req: NextRequest) {
           args: [matchIdBytes32],
         });
         if (locked) {
-          return NextResponse.json({ success: true, locked: true, remainingBalance: null });
+          return NextResponse.json({ success: true, locked: true, varLocked: true, remainingBalance: null });
         }
       } catch {
         // Non-fatal — proceed with charge if lock check fails
       }
     }
 
-    // ── 3. Balance check + charge tracking ───────────────────────────────────
-    let remainingBalance: number | null = null;
+    // ── 3. Profile & Free Tier checks ────────────────────────────────────────
+    const { data: profile, error: profileErr } = await supabase
+      .from("profiles")
+      .select("cumulative_free_seconds_used, circle_wallet_id, wallet_address")
+      .eq("id", userId)
+      .maybeSingle();
 
-    if (circleWalletId) {
-      try {
-        const client = getCircleClient();
-        const balanceRes = await client.getWalletTokenBalance({ id: circleWalletId });
-        const usdc = balanceRes.data?.tokenBalances?.find(
-          (b: { token?: { symbol?: string }; amount?: string }) => b.token?.symbol === "USDC"
-        );
-        const balance = parseFloat(usdc?.amount ?? "0");
-        const chargeAmount = seconds * COST_PER_SECOND_USDC;
+    if (profileErr || !profile) {
+      return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
 
-        if (balance < chargeAmount) {
-          return NextResponse.json({ success: false, locked: false, remainingBalance: balance });
-        }
-        remainingBalance = balance - chargeAmount;
-      } catch (circleErr) {
-        console.error("[stream/charge] Circle balance check failed:", circleErr);
-        // Allow charge to proceed — fail-open for UX
+    const freeUsed = profile.cumulative_free_seconds_used ?? 0;
+    let billableSeconds = seconds;
+    let freeSecondsCharged = 0;
+
+    if (freeUsed < 120) {
+      const remainingFree = 120 - freeUsed;
+      freeSecondsCharged = Math.min(seconds, remainingFree);
+      billableSeconds = seconds - freeSecondsCharged;
+
+      // Update free seconds in database
+      const { error: updateProfileErr } = await supabase
+        .from("profiles")
+        .update({ cumulative_free_seconds_used: freeUsed + freeSecondsCharged })
+        .eq("id", userId);
+
+      if (updateProfileErr) {
+        console.error("[stream/charge] Failed to update free seconds:", updateProfileErr.message);
       }
     }
 
-    // ── 4. Record charge in Supabase ─────────────────────────────────────────
-    const totalUsdc = seconds * COST_PER_SECOND_USDC;
-    if (supabase) {
+    let remainingBalance: number | null = null;
+
+    if (billableSeconds > 0) {
+      const activeWalletId = circleWalletId ?? profile.circle_wallet_id;
+      if (!activeWalletId) {
+        return NextResponse.json({ error: "Circle wallet not provisioned" }, { status: 400 });
+      }
+
+      // Check balance first
+      const client = getCircleClient();
+      const balanceRes = await client.getWalletTokenBalance({ id: activeWalletId });
+      const usdc = balanceRes.data?.tokenBalances?.find(
+        (b: { token?: { symbol?: string }; amount?: string }) => b.token?.symbol === "USDC"
+      );
+      const balance = parseFloat(usdc?.amount ?? "0");
+      const totalUsdc = billableSeconds * COST_PER_SECOND_USDC;
+
+      if (balance < totalUsdc) {
+        return NextResponse.json({ success: false, locked: false, insufficientFunds: true, remainingBalance: balance });
+      }
+
+      // Determine split amounts
+      const creatorAmount = totalUsdc * SPLIT.CREATOR;
+      const fanPoolAmount = totalUsdc * SPLIT.FAN_POOL;
+      const treasuryAmount = totalUsdc * SPLIT.TREASURY;
+
+      // Retrieve Creator's EVM wallet address
+      let creatorAddress: string | null = null;
+      if (body.creatorWalletId) {
+        const { data: creatorProfile } = await supabase
+          .from("profiles")
+          .select("wallet_address")
+          .eq("circle_wallet_id", body.creatorWalletId)
+          .maybeSingle();
+        creatorAddress = creatorProfile?.wallet_address ?? null;
+      }
+
+      // Retrieve platform split wallet addresses
+      let fanPoolAddress = process.env.NEXT_PUBLIC_FAN_REWARDS_POOL_ADDRESS ?? ADDRESSES.FAN_REWARDS_POOL;
+      if (process.env.PLATFORM_POOL_WALLET) {
+        const poolAddrInfo = await getCircleDepositAddress(process.env.PLATFORM_POOL_WALLET);
+        if (poolAddrInfo?.address) {
+          fanPoolAddress = poolAddrInfo.address;
+        }
+      }
+
+      let treasuryAddress = process.env.TREASURY_ADDRESS ?? "0xfa53779d7cb905489d84f1ab2da309624427cafa";
+      if (process.env.PLATFORM_TREASURY_WALLET) {
+        const treasuryAddrInfo = await getCircleDepositAddress(process.env.PLATFORM_TREASURY_WALLET);
+        if (treasuryAddrInfo?.address) {
+          treasuryAddress = treasuryAddrInfo.address;
+        }
+      }
+
+      const usdcTokenAddress = process.env.NEXT_PUBLIC_USDC_ADDRESS ?? "0x3600000000000000000000000000000000000000";
+
+      // Execute transfers
+      // Creator (85%)
+      if (creatorAddress && creatorAmount > 0) {
+        await client.createTransaction({
+          walletId: activeWalletId,
+          tokenAddress: usdcTokenAddress,
+          destinationAddress: creatorAddress,
+          amount: [creatorAmount.toFixed(6)],
+          fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+          idempotencyKey: crypto.randomUUID(),
+        });
+      }
+
+      // Fan Pool (10%)
+      if (fanPoolAddress && fanPoolAmount > 0) {
+        await client.createTransaction({
+          walletId: activeWalletId,
+          tokenAddress: usdcTokenAddress,
+          destinationAddress: fanPoolAddress,
+          amount: [fanPoolAmount.toFixed(6)],
+          fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+          idempotencyKey: crypto.randomUUID(),
+        });
+      }
+
+      // Treasury (5%)
+      if (treasuryAddress && treasuryAmount > 0) {
+        await client.createTransaction({
+          walletId: activeWalletId,
+          tokenAddress: usdcTokenAddress,
+          destinationAddress: treasuryAddress,
+          amount: [treasuryAmount.toFixed(6)],
+          fee: { type: "level", config: { feeLevel: "MEDIUM" } },
+          idempotencyKey: crypto.randomUUID(),
+        });
+      }
+
+      // Record charge in Supabase streaming_charges table
       await supabase.from("streaming_charges").insert({
-        wallet_id: circleWalletId ?? null,
-        creator_address: body.creatorWalletId ?? null,
-        fan_pool_address: process.env.FAN_REWARDS_ADDRESS ?? null,
-        treasury_address: process.env.TREASURY_ADDRESS ?? null,
+        wallet_id: activeWalletId,
+        creator_address: creatorAddress,
+        fan_pool_address: fanPoolAddress,
+        treasury_address: treasuryAddress,
         amount_usdc: totalUsdc,
-        seconds_covered: seconds,
-        creator_amount: totalUsdc * SPLIT.CREATOR,
-        fan_pool_amount: totalUsdc * SPLIT.FAN_POOL,
-        treasury_amount: totalUsdc * SPLIT.TREASURY,
-        settled: false,
+        seconds_covered: billableSeconds,
+        creator_amount: creatorAmount,
+        fan_pool_amount: fanPoolAmount,
+        treasury_amount: treasuryAmount,
+        settled: true,
         created_at: new Date().toISOString(),
       }).then(({ error }) => {
         if (error) console.warn("[stream/charge] insert warning:", error.message);
       });
+
+      // Query balance again after transfer to ensure precision
+      const updatedBalanceRes = await client.getWalletTokenBalance({ id: activeWalletId });
+      const updatedUsdc = updatedBalanceRes.data?.tokenBalances?.find(
+        (b: { token?: { symbol?: string }; amount?: string }) => b.token?.symbol === "USDC"
+      );
+      remainingBalance = parseFloat(updatedUsdc?.amount ?? "0");
     }
 
     // ── 5. Watch-time batch flush to X Layer ─────────────────────────────────
@@ -151,36 +260,34 @@ export async function POST(req: NextRequest) {
     if (shouldFlush && contractsConfigured() && ADDRESSES.FAN_PASSPORT) {
       // Get user's on-chain address from profile
       let onChainAddress: `0x${string}` | null = null;
-      if (supabase) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("wallet_address, passport_token_id")
-          .eq("id", userId)
-          .maybeSingle();
-        onChainAddress = profile?.wallet_address as `0x${string}` | null;
+      const { data: latestProfile } = await supabase
+        .from("profiles")
+        .select("wallet_address, passport_token_id")
+        .eq("id", userId)
+        .maybeSingle();
+      onChainAddress = latestProfile?.wallet_address as `0x${string}` | null;
 
-        if (onChainAddress) {
-          try {
-            const tokenIdRaw = await xLayerPublicClient.readContract({
+      if (onChainAddress) {
+        try {
+          const tokenIdRaw = await xLayerPublicClient.readContract({
+            address: ADDRESSES.FAN_PASSPORT,
+            abi: FAN_PASSPORT_ABI,
+            functionName: "addressToTokenId",
+            args: [onChainAddress],
+          });
+          const tokenId = Number(tokenIdRaw);
+          if (tokenId > 0) {
+            const walletClient = getXLayerWalletClient();
+            await walletClient.writeContract({
               address: ADDRESSES.FAN_PASSPORT,
               abi: FAN_PASSPORT_ABI,
-              functionName: "addressToTokenId",
-              args: [onChainAddress],
+              functionName: "updateWatchTime",
+              args: [BigInt(tokenId), BigInt(tracker.seconds)],
             });
-            const tokenId = Number(tokenIdRaw);
-            if (tokenId > 0) {
-              const walletClient = getXLayerWalletClient();
-              await walletClient.writeContract({
-                address: ADDRESSES.FAN_PASSPORT,
-                abi: FAN_PASSPORT_ABI,
-                functionName: "updateWatchTime",
-                args: [BigInt(tokenId), BigInt(tracker.seconds)],
-              });
-              console.log(`[stream/charge] Watch-time flushed: +${tracker.seconds}s for tokenId=${tokenId}`);
-            }
-          } catch (flushErr) {
-            console.error("[stream/charge] Watch-time flush failed (non-fatal):", flushErr);
+            console.log(`[stream/charge] Watch-time flushed: +${tracker.seconds}s for tokenId=${tokenId}`);
           }
+        } catch (flushErr) {
+          console.error("[stream/charge] Watch-time flush failed (non-fatal):", flushErr);
         }
       }
 

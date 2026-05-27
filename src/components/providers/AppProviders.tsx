@@ -8,6 +8,7 @@ import { okxWallet, metaMaskWallet, walletConnectWallet } from "@rainbow-me/rain
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { xLayerTestnet } from "@/lib/xlayer/chain";
 import { useCountryTheme } from "@/lib/theme/useCountryTheme";
+import { UserProvisioner } from "@/components/providers/UserProvisioner";
 
 const walletConnectProjectId =
   process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
@@ -56,7 +57,10 @@ export function AppProviders({ children }: { children: ReactNode }) {
       <WagmiProvider config={wagmiConfig}>
         <QueryClientProvider client={queryClient}>
           <RainbowKitProvider theme={darkTheme()} modalSize="compact">
-            <ThemeBridge>{children}</ThemeBridge>
+            <ThemeBridge>
+              <UserProvisioner />
+              {children}
+            </ThemeBridge>
           </RainbowKitProvider>
         </QueryClientProvider>
       </WagmiProvider>

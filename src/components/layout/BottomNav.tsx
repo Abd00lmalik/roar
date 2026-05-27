@@ -24,31 +24,31 @@ export function BottomNav() {
       <div className="flex items-center justify-between text-xs text-white/70">
         <Link 
           href="/stadium" 
-          className={`hover:text-white transition ${pathname === "/stadium" ? "text-white font-semibold" : ""}`}
+          className={`hover:text-white transition ${pathname === "/stadium" ? "text-[var(--country-accent,#FFCE00)] font-semibold" : ""}`}
         >
           Stadium Feed 🏟️
         </Link>
         <Link 
           href="/upload" 
-          className={`hover:text-white transition ${pathname === "/upload" ? "text-white font-semibold" : ""}`}
+          className={`hover:text-white transition ${pathname === "/upload" ? "text-[var(--country-accent,#FFCE00)] font-semibold" : ""}`}
         >
           Upload 📹
         </Link>
         <Link 
           href="/passport" 
-          className={`hover:text-white transition ${pathname === "/passport" ? "text-white font-semibold" : ""}`}
+          className={`hover:text-white transition ${pathname === "/passport" ? "text-[var(--country-accent,#FFCE00)] font-semibold" : ""}`}
         >
           Passport 🪪
         </Link>
         <Link 
           href="/earnings" 
-          className={`hover:text-white transition ${pathname === "/earnings" ? "text-white font-semibold" : ""}`}
+          className={`hover:text-white transition ${pathname === "/earnings" ? "text-[var(--country-accent,#FFCE00)] font-semibold" : ""}`}
         >
           Earnings 💰
         </Link>
         <Link 
           href="/leaderboards" 
-          className={`hover:text-white transition ${pathname === "/leaderboards" ? "text-white font-semibold" : ""}`}
+          className={`hover:text-white transition ${pathname === "/leaderboards" ? "text-[var(--country-accent,#FFCE00)] font-semibold" : ""}`}
         >
           Leaderboards
         </Link>
