@@ -77,6 +77,12 @@ export function Navbar() {
               )}
             </div>
           )}
+          {session?.user && !session.user.walletAddress && (
+            <div className="hidden sm:flex flex-col items-end px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-xl text-[11px] font-medium leading-tight text-red-400">
+              <span className="font-bold">Wallet Error</span>
+              <span className="text-white/60 font-mono text-[9px] mt-0.5">Check console logs</span>
+            </div>
+          )}
           <ConnectButton chainStatus="icon" showBalance={false} />
         </div>
       </div>

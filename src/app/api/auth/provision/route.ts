@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
     // 2. Fetch profile to see if they already have a circle wallet
     const { data: profile } = await supabase
       .from("profiles")
-      .select("circle_wallet_id, wallet_address, country_code, confederation")
+      .select("id, circle_wallet_id, wallet_address, country_code, confederation, handle, display_name, avatar_url, country_name, cumulative_free_seconds_used, email")
       .eq("id", userId)
       .maybeSingle();
 
@@ -71,21 +71,63 @@ export async function POST(req: NextRequest) {
     let finalConfederation = profile?.confederation ?? confederation;
 
     if (!circleWalletId) {
-      const wallet = await provisionUserWallet(userId);
-      if (wallet) {
+      try {
+        console.log("[provision] Provisioning wallet for user:", userId);
+        const wallet = await provisionUserWallet(userId);
+        if (!wallet) {
+          return NextResponse.json({
+            success: false,
+            error: "Circle wallet provisioning failed and returned no wallet.",
+            envCheck: {
+              hasApiKey: !!process.env.CIRCLE_API_KEY,
+              hasEntitySecret: !!process.env.CIRCLE_ENTITY_SECRET,
+              hasWalletSetId: !!process.env.CIRCLE_WALLET_SET_ID,
+            }
+          }, { status: 500 });
+        }
         circleWalletId = wallet.walletId;
         circleWalletAddress = wallet.walletAddress;
-        
-        await supabase
-          .from("profiles")
-          .update({
-            circle_wallet_id: circleWalletId,
-            wallet_address: circleWalletAddress,
-            country_code: finalCountryCode,
-            confederation: finalConfederation,
-          })
-          .eq("id", userId);
+      } catch (walletErr: any) {
+        console.error("[provision] Wallet provision error:", walletErr);
+        return NextResponse.json({
+          success: false,
+          error: walletErr?.message ?? "Wallet provisioning threw an unknown error.",
+          envCheck: {
+            hasApiKey: !!process.env.CIRCLE_API_KEY,
+            hasEntitySecret: !!process.env.CIRCLE_ENTITY_SECRET,
+            hasWalletSetId: !!process.env.CIRCLE_WALLET_SET_ID,
+          }
+        }, { status: 500 });
       }
+    }
+
+    // Upsert profile to be absolutely certain it exists and has all values populated
+    const targetTeam = getTeamByCode(finalCountryCode);
+    const countryName = targetTeam?.name ?? "United States";
+    const generatedHandle = profile?.handle ?? (
+      session?.user?.email
+        ? session.user.email.split("@")[0].substring(0, 15) + "_" + Math.random().toString(36).substring(2, 6)
+        : "user_" + Math.random().toString(36).substring(2, 10)
+    );
+
+    const { error: upsertErr } = await supabase
+      .from("profiles")
+      .upsert({
+        id: userId,
+        email: profile?.email ?? session?.user?.email ?? null,
+        display_name: profile?.display_name ?? session?.user?.name ?? "User",
+        handle: generatedHandle,
+        avatar_url: profile?.avatar_url ?? session?.user?.image ?? null,
+        circle_wallet_id: circleWalletId,
+        wallet_address: circleWalletAddress,
+        country_code: finalCountryCode,
+        country_name: profile?.country_name ?? countryName,
+        confederation: finalConfederation,
+        cumulative_free_seconds_used: profile?.cumulative_free_seconds_used ?? 0,
+      }, { onConflict: "id" });
+
+    if (upsertErr) {
+      throw new Error(`Failed to upsert profile in database: ${upsertErr.message}`);
     }
 
     // 3. Update with Web3 walletAddress if provided

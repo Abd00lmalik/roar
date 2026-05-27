@@ -55,8 +55,7 @@ export async function provisionUserWallet(userId: string): Promise<CircleWallet 
   try {
     const walletSetId = process.env.CIRCLE_WALLET_SET_ID;
     if (!walletSetId) {
-      console.error("[Circle] CIRCLE_WALLET_SET_ID is not set — skipping wallet provisioning");
-      return null;
+      throw new Error("CIRCLE_WALLET_SET_ID is not configured in the server environment.");
     }
 
     const client = getCircleClient();
@@ -80,16 +79,16 @@ export async function provisionUserWallet(userId: string): Promise<CircleWallet 
 
     const wallet = response.data?.wallets?.[0];
     if (!wallet?.id || !wallet?.address) {
-      console.error("[Circle] createWallets returned no wallet for userId:", userId);
-      return null;
+      throw new Error(`Circle API returned response, but wallets list was empty or invalid: ${JSON.stringify(response.data)}`);
     }
 
     console.log("[Circle] Wallet provisioned:", { walletId: wallet.id, userId });
     return { walletId: wallet.id, walletAddress: wallet.address };
-  } catch (err: unknown) {
+  } catch (err: any) {
+    const apiError = err?.response?.data ? JSON.stringify(err.response.data) : "";
     const message = err instanceof Error ? err.message : String(err);
-    console.error("[Circle] provisionUserWallet failed:", message);
-    return null;
+    console.error("[Circle] provisionUserWallet failed:", message, apiError);
+    throw new Error(`${message} ${apiError}`);
   }
 }
 

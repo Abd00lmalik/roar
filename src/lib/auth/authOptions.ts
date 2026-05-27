@@ -42,46 +42,67 @@ export const authOptions: AuthOptions = {
         // Check if profile exists
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, circle_wallet_id")
+          .select("id, circle_wallet_id, wallet_address")
           .eq("id", userId)
           .maybeSingle();
 
+        let circleWalletId = profile?.circle_wallet_id;
+        let circleWalletAddress = profile?.wallet_address;
+
+        // Provision wallet if not present
+        if (!circleWalletId) {
+          console.log(`[NextAuth signIn] Provisioning Circle wallet for user ${userId}`);
+          try {
+            const wallet = await provisionUserWallet(userId);
+            if (wallet) {
+              circleWalletId = wallet.walletId;
+              circleWalletAddress = wallet.walletAddress;
+            }
+          } catch (walletErr) {
+            console.error("[NextAuth signIn] Wallet provisioning failed:", walletErr);
+          }
+        }
+
         if (!profile) {
           // New user — insert profile record
+          const defaultCountryCode = "US";
+          const defaultCountryName = "United States";
+          const generatedHandle = user.email
+            ? user.email.split("@")[0].substring(0, 15) + "_" + Math.random().toString(36).substring(2, 6)
+            : "user_" + Math.random().toString(36).substring(2, 10);
+
           const { error: insertErr } = await supabase.from("profiles").insert({
             id: userId,
             email: user.email ?? null,
-            display_name: user.name ?? null,
+            display_name: user.name ?? "User",
+            handle: generatedHandle,
             avatar_url: user.image ?? null,
-            wallet_address: null,
-            circle_wallet_id: null,
+            wallet_address: circleWalletAddress ?? null,
+            circle_wallet_id: circleWalletId ?? null,
+            country_code: defaultCountryCode,
+            country_name: defaultCountryName,
             cumulative_free_seconds_used: 0,
           });
 
           if (insertErr) {
-            console.warn("[NextAuth signIn] Profile insert warning:", insertErr.message);
+            console.error("[NextAuth signIn] Profile insert failed:", insertErr.message);
+          } else {
+            console.log(`[NextAuth signIn] Profile created successfully for ${userId}`);
           }
-        }
+        } else if (circleWalletId && (circleWalletId !== profile.circle_wallet_id || circleWalletAddress !== profile.wallet_address)) {
+          // Profile exists, but wallet was provisioned during this call
+          const { error: updateErr } = await supabase
+            .from("profiles")
+            .update({
+              circle_wallet_id: circleWalletId,
+              wallet_address: circleWalletAddress,
+            })
+            .eq("id", userId);
 
-        // Re-fetch to get current state (e.g. if insert worked or raced)
-        const { data: currentProfile } = await supabase
-          .from("profiles")
-          .select("id, circle_wallet_id")
-          .eq("id", userId)
-          .maybeSingle();
-
-        if (currentProfile && !currentProfile.circle_wallet_id) {
-          console.log(`[NextAuth signIn] Provisioning Circle wallet for user ${userId}`);
-          const wallet = await provisionUserWallet(userId);
-          if (wallet) {
-            await supabase
-              .from("profiles")
-              .update({
-                circle_wallet_id: wallet.walletId,
-                wallet_address: wallet.walletAddress,
-              })
-              .eq("id", userId);
-            console.log(`[NextAuth signIn] Wallet provisioned: ${wallet.walletId} -> ${wallet.walletAddress}`);
+          if (updateErr) {
+            console.error("[NextAuth signIn] Profile wallet update failed:", updateErr.message);
+          } else {
+            console.log(`[NextAuth signIn] Profile wallet updated successfully for ${userId}`);
           }
         }
 

@@ -51,14 +51,21 @@ export function UserProvisioner() {
           walletAddress: connectedAddress || undefined,
         }),
       })
-        .then((res) => res.json())
+        .then(async (res) => {
+          const isJson = res.headers.get("content-type")?.includes("application/json");
+          const data = isJson ? await res.json() : null;
+          if (!res.ok) {
+            throw new Error(data?.error ?? `HTTP ${res.status}`);
+          }
+          return data;
+        })
         .then((data) => {
-          if (data.success) {
+          if (data && data.success) {
             console.log("[UserProvisioner] Automatic wallet provisioned successfully:", data);
             // Refresh NextAuth session to load the wallet address into the client cookie session
             update();
           } else {
-            console.error("[UserProvisioner] Automatic provisioning failed:", data.error);
+            console.error("[UserProvisioner] Automatic provisioning failed:", data?.error ?? "Unknown error");
           }
         })
         .catch((err) => {

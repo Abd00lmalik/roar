@@ -89,27 +89,27 @@ body {
     /* Top glow — accent colour of the selected nation */
     radial-gradient(
       ellipse 80% 40% at 50% 0%,
-      color-mix(in srgb, var(--country-accent, #FFCE00) 18%, transparent) 0%,
+      color-mix(in srgb, var(--country-accent, #FFCE00) 28%, transparent) 0%,
       transparent 100%
     ),
     /* Soft Bottom-right ambient glow in the 'to' color */
     radial-gradient(
       ellipse 50% 50% at 100% 100%,
-      color-mix(in srgb, var(--country-to, #08080c) 15%, transparent) 0%,
+      color-mix(in srgb, var(--country-to, #08080c) 25%, transparent) 0%,
       transparent 100%
     ),
     /* Soft Bottom-left ambient glow in the 'from' color */
     radial-gradient(
       ellipse 50% 50% at 0% 100%,
-      color-mix(in srgb, var(--country-from, #0d0e15) 15%, transparent) 0%,
+      color-mix(in srgb, var(--country-from, #0d0e15) 25%, transparent) 0%,
       transparent 100%
     ),
     /* Base linear gradient mixing the country flag colors with deep stadium black */
     linear-gradient(
       150deg,
-      color-mix(in srgb, var(--country-from, #0a0a0f) 8%, #030305) 0%,
-      color-mix(in srgb, var(--country-via, #0a0a0f) 5%, #030305) 50%,
-      color-mix(in srgb, var(--country-to, #0a0a0f) 8%, #030305) 100%
+      color-mix(in srgb, var(--country-from, #0a0a0f) 18%, #030305) 0%,
+      color-mix(in srgb, var(--country-via, #0a0a0f) 12%, #030305) 50%,
+      color-mix(in srgb, var(--country-to, #0a0a0f) 18%, #030305) 100%
     );
 }
 
