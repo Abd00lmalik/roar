@@ -66,6 +66,17 @@ export function UserProvisioner() {
             update();
           } else {
             console.error("[UserProvisioner] Automatic provisioning failed:", data?.error ?? "Unknown error");
+            if (data?.databaseCheck) {
+              console.warn(
+                "==================================================\n" +
+                "DATABASE CONFIGURATION WARNING (RoarTube)\n" +
+                `Error: ${data.error}\n` +
+                `Detail: ${data.databaseCheck.errorDetail}\n` +
+                `Hint: ${data.databaseCheck.hint}\n` +
+                "Please check the supabase migrations directory or execute migration 005 manually.\n" +
+                "=================================================="
+              );
+            }
           }
         })
         .catch((err) => {

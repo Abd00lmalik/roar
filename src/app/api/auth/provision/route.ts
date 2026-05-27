@@ -59,11 +59,23 @@ export async function POST(req: NextRequest) {
     const confederation = team?.conf ?? "CONCACAF";
 
     // 2. Fetch profile to see if they already have a circle wallet
-    const { data: profile } = await supabase
+    const { data: profile, error: selectErr } = await supabase
       .from("profiles")
       .select("id, circle_wallet_id, wallet_address, country_code, confederation, handle, display_name, avatar_url, country_name, cumulative_free_seconds_used, email")
       .eq("id", userId)
       .maybeSingle();
+
+    if (selectErr) {
+      console.error("[provision] select error:", selectErr);
+      return NextResponse.json({
+        success: false,
+        error: `Database select error: ${selectErr.message}`,
+        databaseCheck: {
+          errorDetail: selectErr.details ?? "",
+          hint: "Your 'profiles' table is likely missing columns (e.g. circle_wallet_id, email, confederation). Please ensure that you run the migration file '005_fix_profiles_for_google_auth.sql' on your database."
+        }
+      }, { status: 200 });
+    }
 
     let circleWalletId = profile?.circle_wallet_id;
     let circleWalletAddress = profile?.wallet_address;
@@ -127,7 +139,15 @@ export async function POST(req: NextRequest) {
       }, { onConflict: "id" });
 
     if (upsertErr) {
-      throw new Error(`Failed to upsert profile in database: ${upsertErr.message}`);
+      console.error("[provision] upsert error:", upsertErr);
+      return NextResponse.json({
+        success: false,
+        error: `Database upsert error: ${upsertErr.message}`,
+        databaseCheck: {
+          errorDetail: upsertErr.details ?? "",
+          hint: "Ensure the migration file '005_fix_profiles_for_google_auth.sql' has been successfully applied to your database."
+        }
+      }, { status: 200 });
     }
 
     // 3. Update with Web3 walletAddress if provided
