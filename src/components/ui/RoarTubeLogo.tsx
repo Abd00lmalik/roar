@@ -1,34 +1,23 @@
 "use client";
 
-import { useState } from "react";
-
 interface RoarTubeLogoProps {
   className?: string;
-  /** Override height in pixels (default: 40) */
+  /** Override height/size in pixels (default: 40) */
   height?: number;
 }
 
 export function RoarTubeLogo({ className = "", height = 40 }: RoarTubeLogoProps) {
-  const [imgFailed, setImgFailed] = useState(false);
+  const fontSize = `${height * 0.65}px`;
 
-  if (!imgFailed) {
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src="/logo.png"
-        alt="RoarTube"
-        style={{ height, width: "auto", objectFit: "contain" }}
-        className={`drop-shadow-md select-none ${className}`}
-        onError={() => setImgFailed(true)}
-      />
-    );
-  }
-
-  /* Text fallback if no logo.png exists */
   return (
     <span
-      className={`font-black italic tracking-tight text-xl ${className}`}
-      style={{ color: "var(--country-accent, #FFCE00)" }}
+      className={`font-black italic tracking-tight font-display select-none ${className}`}
+      style={{
+        fontSize,
+        lineHeight: "1",
+        color: "var(--country-accent, #FFCE00)",
+        textShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
+      }}
     >
       Roar<span className="text-white">Tube</span>
     </span>
