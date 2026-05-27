@@ -43,7 +43,7 @@ export function Navbar() {
   const walletAddress = connectedAddress ?? session?.user?.walletAddress ?? null;
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-stadium/90 backdrop-blur-xl px-6 py-4">
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-stadium/90 backdrop-blur-xl px-6 py-3">
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link href="/stadium" className="flex items-center gap-2">

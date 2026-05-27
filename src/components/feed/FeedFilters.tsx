@@ -5,8 +5,6 @@ import { COUNTRIES } from "@/lib/theme/countries";
 import { CountryFlag } from "@/components/ui/CountryFlag";
 
 type Props = {
-  category: string;
-  setCategory: Dispatch<SetStateAction<string>>;
   country: string;
   setCountry: Dispatch<SetStateAction<string>>;
 };
@@ -93,80 +91,11 @@ function CountrySelect({
   );
 }
 
-function CategorySelect({
-  value,
-  onChange,
-}: {
-  value: string;
-  onChange: (val: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const handleOutsideClick = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
-  }, []);
-
-  const options = [
-    "All",
-    "Match Previews",
-    "Fan Reactions",
-    "Tactical Breakdowns",
-    "Banter Clips",
-  ];
-
+export function FeedFilters({ country, setCountry }: Props) {
   return (
-    <div className="relative w-full" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full rounded bg-black/30 p-2 text-sm text-left flex items-center justify-between border border-white/5 hover:border-white/10 transition-all cursor-pointer text-white"
-      >
-        <span>{value}</span>
-        <span className="text-white/40 text-xs select-none">▼</span>
-      </button>
-
-      {open && (
-        <div className="absolute left-0 right-0 mt-1 max-h-[220px] overflow-y-auto z-50 rounded border border-white/15 bg-slate-900 shadow-2xl p-1 space-y-0.5 custom-scrollbar">
-          {options.map((opt) => (
-            <button
-              key={opt}
-              type="button"
-              onClick={() => {
-                onChange(opt);
-                setOpen(false);
-              }}
-              className={`w-full rounded p-2 text-xs text-left hover:bg-white/10 transition-colors cursor-pointer text-white ${
-                value === opt ? "bg-white/5 font-semibold text-[var(--country-accent)]" : ""
-              }`}
-            >
-              {opt}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export function FeedFilters({ category, setCategory, country, setCountry }: Props) {
-  return (
-    <aside className="glass-panel p-3 space-y-3">
-      <h3 className="font-semibold text-sm">Filters</h3>
-      
+    <aside className="glass-panel p-3.5 space-y-3">
+      <h3 className="font-semibold text-xs uppercase tracking-wider text-white/50">Filter by Nation</h3>
       <div>
-        <label className="mb-1.5 block text-xs text-chalk/70">Category</label>
-        <CategorySelect value={category} onChange={setCategory} />
-      </div>
-
-      <div>
-        <label className="mb-1.5 block text-xs text-chalk/70">Country</label>
         <CountrySelect value={country} onChange={setCountry} />
       </div>
     </aside>

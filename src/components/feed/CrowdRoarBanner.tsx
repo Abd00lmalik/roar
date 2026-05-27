@@ -62,15 +62,43 @@ export function CrowdRoarBanner() {
   }
 
   return (
-    <div className="glass-panel flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
-      <span>🔥 Crowd RoarTube</span>
-      <span>👁 {Number(totalWatchSeconds).toLocaleString()} seconds watched today</span>
-      <span className="flex items-center gap-1.5">
-        Top Country: {topCountryName}
-        <CountryFlag code={topCountryCode} className="w-5 h-3.5 object-cover rounded-sm shadow-sm inline-block" />
-      </span>
-      <span>Top Creator: {topCreator}</span>
-      <span>Pool: {Number(poolUsdc).toFixed(2)} USDC</span>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-white/[0.01] border border-white/5 rounded-2xl p-3 text-xs w-full">
+      <div className="flex flex-col gap-1 p-3 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md shadow-inner">
+        <span className="text-white/40 uppercase tracking-wider text-[10px] font-medium flex items-center gap-1 select-none">
+          <span>💰</span> Rewards Pool
+        </span>
+        <span className="text-white font-bold text-sm text-[var(--country-accent,#FFCC00)] drop-shadow-[0_0_8px_rgba(255,204,0,0.2)]">
+          {Number(poolUsdc).toFixed(2)} USDC
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1 p-3 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md shadow-inner">
+        <span className="text-white/40 uppercase tracking-wider text-[10px] font-medium flex items-center gap-1 select-none">
+          <span>👁️</span> Total Watchtime
+        </span>
+        <span className="text-white font-bold text-sm">
+          {Number(totalWatchSeconds).toLocaleString()}s
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1 p-3 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md shadow-inner">
+        <span className="text-white/40 uppercase tracking-wider text-[10px] font-medium flex items-center gap-1 select-none">
+          <span>🌍</span> Top Country
+        </span>
+        <span className="text-white font-bold text-sm flex items-center gap-1.5 truncate">
+          <span className="truncate">{topCountryName}</span>
+          <CountryFlag code={topCountryCode} className="w-4 h-2.5 object-cover rounded-sm shadow-sm inline-block flex-shrink-0" />
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-1 p-3 bg-white/[0.03] border border-white/5 rounded-xl backdrop-blur-md shadow-inner">
+        <span className="text-white/40 uppercase tracking-wider text-[10px] font-medium flex items-center gap-1 select-none">
+          <span>🔥</span> Top Creator
+        </span>
+        <span className="text-white font-bold text-sm truncate text-[var(--country-accent,#FFCC00)]">
+          {topCreator}
+        </span>
+      </div>
     </div>
   );
 }

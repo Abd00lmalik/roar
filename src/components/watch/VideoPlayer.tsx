@@ -17,7 +17,7 @@ type Props = {
 
 export function VideoPlayer(props: Props) {
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10">
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl border border-white/10 bg-black shadow-2xl">
       <ReactPlayer
         ref={props.playerRef}
         url={props.url}
