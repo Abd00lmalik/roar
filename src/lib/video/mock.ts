@@ -1,5 +1,5 @@
 export const MOCK_VIDEO_URL =
-  "https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4";
+  "https://assets.mixkit.co/videos/preview/mixkit-soccer-ball-kicked-into-the-net-40618-large.mp4";
 
 export function mockCloudflareUpload() {
   return {
