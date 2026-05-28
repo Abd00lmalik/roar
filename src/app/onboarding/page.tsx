@@ -83,7 +83,7 @@ export default function OnboardingPage() {
     // Apply theme immediately
     applyTheme(selected);
 
-    // If already signed in, update their profile and go to stadium
+    // If already signed in, update their profile and continue to funding
     if (session?.user?.id) {
       const supabase = createClient();
       if (supabase) {
@@ -92,7 +92,7 @@ export default function OnboardingPage() {
           .update({ supporter_nation: selected.code })
           .eq("id", session.user.id);
       }
-      router.push("/stadium");
+      router.push("/wallet/fund");
     } else {
       // Not signed in yet — go to sign in page
       router.push("/auth/signin?callbackUrl=/wallet/fund");

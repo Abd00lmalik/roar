@@ -37,13 +37,13 @@ export default function FundWalletPage() {
     );
   }
 
-  if (status === "unauthenticated") {
+  if (status === "unauthenticated" && !isConnected) {
     router.push("/auth/signin?callbackUrl=/wallet/fund");
     return null;
   }
 
   const isWeb3User   = isConnected && !!web3Address;
-  const walletAddr   = session?.user?.wallet_address ?? web3Address ?? "";
+  const walletAddr   = web3Address ?? session?.user?.wallet_address ?? "";
   const gatewayBal   = session?.user?.gateway_balance ?? 0;
 
   const handleMove = async () => {
@@ -56,8 +56,11 @@ export default function FundWalletPage() {
       if (isWeb3User) {
         // Web3 user: sign a real USDC transfer transaction
         // Transfer from their EOA to the platform gateway wallet
-        const usdcAddress = process.env.NEXT_PUBLIC_USDC_ADDRESS ?? "0x3600000000000000000000000000000000000000";
-        const platformGatewayAddress = process.env.NEXT_PUBLIC_PLATFORM_GATEWAY_WALLET_ADDRESS ?? "0xfa53779d7cb905489d84f1ab2da309624427cafa";
+        const usdcAddress = process.env.NEXT_PUBLIC_USDC_ADDRESS;
+        const platformGatewayAddress = process.env.NEXT_PUBLIC_PLATFORM_GATEWAY_WALLET_ADDRESS;
+        if (!usdcAddress || !platformGatewayAddress) {
+          throw new Error("Missing NEXT_PUBLIC_USDC_ADDRESS or NEXT_PUBLIC_PLATFORM_GATEWAY_WALLET_ADDRESS");
+        }
         
         // USDC has 6 decimals on Sepolia and X Layer Testnet
         const amountInUnits = parseUnits(amount, 6);
@@ -73,7 +76,7 @@ export default function FundWalletPage() {
         const res = await fetch("/api/wallet/move-to-gateway-web3", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ txHash: hash, amount }),
+          body: JSON.stringify({ txHash: hash, amount, walletAddress: walletAddr }),
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error);

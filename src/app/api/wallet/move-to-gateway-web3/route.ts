@@ -6,11 +6,8 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
-  }
 
-  const { txHash, amount } = await req.json();
+  const { txHash, amount, walletAddress } = await req.json();
   if (!txHash || !amount) {
     return NextResponse.json({ error: "Missing txHash or amount" }, { status: 400 });
   }
@@ -30,19 +27,35 @@ export async function POST(req: NextRequest) {
     }
 
     const amountNum = parseFloat(amount);
-    
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("gateway_balance")
-      .eq("id", session.user.id)
-      .single();
-      
-    const currentBal = profile?.gateway_balance ? parseFloat(profile.gateway_balance.toString()) : 0;
 
-    await supabase
-      .from("profiles")
-      .update({ gateway_balance: currentBal + amountNum })
-      .eq("id", session.user.id);
+    if (session?.user?.id) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("gateway_balance")
+        .eq("id", session.user.id)
+        .single();
+
+      const currentBal = profile?.gateway_balance ? parseFloat(profile.gateway_balance.toString()) : 0;
+
+      await supabase
+        .from("profiles")
+        .update({ gateway_balance: currentBal + amountNum })
+        .eq("id", session.user.id);
+    } else if (walletAddress) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("id, gateway_balance")
+        .eq("wallet_address", walletAddress)
+        .maybeSingle();
+
+      if (profile?.id) {
+        const currentBal = profile.gateway_balance ? parseFloat(profile.gateway_balance.toString()) : 0;
+        await supabase
+          .from("profiles")
+          .update({ gateway_balance: currentBal + amountNum })
+          .eq("id", profile.id);
+      }
+    }
 
     return NextResponse.json({ success: true, moved: amountNum });
   } catch (err: unknown) {
