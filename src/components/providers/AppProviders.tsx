@@ -10,24 +10,20 @@ import { xLayerTestnet } from "@/lib/xlayer/chain";
 import { useCountryTheme } from "@/lib/theme/useCountryTheme";
 import { UserProvisioner } from "@/components/providers/UserProvisioner";
 
-const walletConnectProjectId =
-  process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ??
-  "2f05ae7c3f314f5f896f7bf9bb6f6e41";
+const walletConnectProjectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID;
 
 const connectors = connectorsForWallets(
   [
     {
       groupName: "Recommended",
-      wallets: [
-        okxWallet,
-        metaMaskWallet,
-        walletConnectWallet,
-      ],
+      wallets: walletConnectProjectId
+        ? [okxWallet, metaMaskWallet, walletConnectWallet]
+        : [okxWallet, metaMaskWallet],
     },
   ],
   {
     appName: "RoarTube",
-    projectId: walletConnectProjectId,
+    projectId: walletConnectProjectId ?? "disabled-walletconnect",
     appDescription: "Where football attention becomes creator revenue.",
     appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "https://roartube.vercel.app",
   },

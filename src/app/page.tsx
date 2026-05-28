@@ -1,7 +1,6 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { StadiumBackground } from "@/components/landing/StadiumBackground";
 
 export default function HomePage() {
@@ -13,20 +12,9 @@ export default function HomePage() {
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/60 z-0" />
       
       <div className="relative z-10 flex flex-col items-center gap-6 px-4">
-        {/* Logo */}
-        <div className="flex flex-col items-center gap-3">
-          <Image
-            src="/logo.png"
-            alt="RoarTube"
-            width={80}
-            height={80}
-            priority
-            className="rounded-full border border-white/10"
-          />
-          <h1 className="text-white font-black text-4xl italic tracking-tight">
-            Roar<span className="text-[var(--country-accent,#FFCE00)]">Tube</span>
-          </h1>
-        </div>
+        <h1 className="text-white font-black text-4xl italic tracking-tight">
+          Roar<span className="text-[var(--country-accent,#FFCE00)]">Tube</span>
+        </h1>
         
         <p className="text-white/70 text-lg text-center max-w-sm font-medium">
           Where football attention becomes creator revenue.

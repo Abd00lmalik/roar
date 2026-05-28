@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { signIn, useSession } from "next-auth/react";
 import { useAccount } from "wagmi";
 import { useConnectModal } from "@rainbow-me/rainbowkit";
@@ -137,21 +136,6 @@ export default function OnboardingPage() {
         />
 
         <div className="relative z-10 glass-panel p-8 max-w-md w-full space-y-6 text-center">
-          {/* Logo */}
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Image
-              src="/logo.png"
-              alt="RoarTube"
-              width={32}
-              height={32}
-              priority
-              className="rounded-full border border-white/10"
-            />
-            <span className="text-white font-black text-xl italic tracking-tight">
-              Roar<span className="text-[var(--country-accent,#FFCE00)]">Tube</span>
-            </span>
-          </div>
-
           {/* Selected nation badge */}
           {selected && (
             <div className="flex items-center justify-center gap-2 py-2 px-4 rounded-full bg-white/[0.05] border border-white/10 w-fit mx-auto">
@@ -249,21 +233,6 @@ export default function OnboardingPage() {
       />
 
       <div className="relative z-10 w-full flex flex-col items-center gap-6">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="RoarTube"
-            width={32}
-            height={32}
-            priority
-            className="rounded-full border border-white/10"
-          />
-          <span className="text-white font-black text-xl italic tracking-tight">
-            Roar<span className="text-[var(--country-accent,#FFCE00)]">Tube</span>
-          </span>
-        </div>
-
         {/* Header */}
         <div className="text-center space-y-2">
           <h1 className="text-4xl md:text-5xl font-black text-white font-display uppercase tracking-tight">
