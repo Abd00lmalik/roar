@@ -5,25 +5,6 @@
  * Uses official, verified flag specifications.
  */
 
-export interface WC2026Team {
-  readonly code: string;
-  readonly name: string;
-  readonly flag: string;
-  readonly emoji: string;
-  readonly confederation: string;
-  readonly conf: string;
-  readonly from: string;
-  readonly via: string;
-  readonly to: string;
-  readonly accent: string;
-  readonly colors: {
-    readonly from: string;
-    readonly via: string;
-    readonly to: string;
-    readonly accent: string;
-  };
-}
-
 export const WC2026_TEAMS = [
   // ── UEFA ──────────────────────────────────────────────────────────────
   { code: "DE", name: "Germany", flag: "🇩🇪", emoji: "🇩🇪", confederation: "UEFA", conf: "UEFA", from: "#000000", via: "#DD0000", to: "#FFCE00", accent: "#FFCE00", colors: { from: "#000000", via: "#DD0000", to: "#FFCE00", accent: "#FFCE00" } },
