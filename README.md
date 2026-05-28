@@ -27,7 +27,7 @@ Every paid second of human attention processed by the streaming platform trigger
 
 ---
 
-## 🛠️ Dual-Engine Architecture
+## Dual-Engine Architecture
 
 Processing financial transactions every single second directly on-chain is impossible due to network congestion, latency, and volatile gas overhead. Roarball solves this scaling bottleneck by utilizing a specialized dual-engine hybrid architecture that splits execution by engineering strength:
 
