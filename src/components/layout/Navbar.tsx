@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
 import { useSession } from "next-auth/react";
@@ -38,7 +38,17 @@ export function Navbar() {
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link href="/stadium" className="flex items-center gap-2">
-          <RoarTubeLogo />
+          <Image
+            src="/logo.png"
+            alt="RoarTube"
+            width={32}
+            height={32}
+            priority
+            className="h-8 w-8 rounded-full object-cover border border-white/10"
+          />
+          <span className="text-white font-black text-xl italic tracking-tight">
+            Roar<span className="text-[var(--country-accent,#FFCE00)]">Tube</span>
+          </span>
         </Link>
 
         {/* Nav Links */}
