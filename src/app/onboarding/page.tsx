@@ -9,6 +9,7 @@ import { useThemeStore } from "@/store/themeStore";
 import { COUNTRIES, CountryConfig } from "@/lib/theme/countries";
 import { CountryFlag } from "@/components/ui/CountryFlag";
 import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
+import { createClient } from "@/lib/supabase/client";
 
 /* ─── Google SVG icon ─────────────────────────────────────────────── */
 function GoogleIcon() {
@@ -68,20 +69,36 @@ export default function OnboardingPage() {
     applyTheme(team);
   };
 
-  const handleConfirm = () => {
+  const [saving, setSaving] = useState(false);
+
+  const handleConfirm = async () => {
     if (!selected) return;
+    setSaving(true);
+
     /* Persist: localStorage + cookies */
     localStorage.setItem("roar_selected_team", JSON.stringify(selected));
-    document.cookie = `roar_selected_team=${selected.code}; path=/; max-age=${60 * 60 * 24 * 365}`;
-    document.cookie = `supporter_nation=${selected.code}; path=/; max-age=${60 * 60 * 24 * 365}`;
+    document.cookie = `roar_selected_team=${selected.code}; path=/; max-age=31536000; SameSite=Lax`;
+    document.cookie = `supporter_nation=${selected.code}; path=/; max-age=31536000; SameSite=Lax`;
     setCountryCode(selected.code as any);
 
-    /* If already authenticated, skip auth step */
-    if (session || isConnected) {
+    // Apply theme immediately
+    applyTheme(selected);
+
+    // If already signed in, update their profile and go to stadium
+    if (session?.user?.id) {
+      const supabase = createClient();
+      if (supabase) {
+        await supabase
+          .from("profiles")
+          .update({ supporter_nation: selected.code })
+          .eq("id", session.user.id);
+      }
       router.push("/stadium");
     } else {
-      setStep("auth");
+      // Not signed in yet — go to sign in page
+      router.push("/auth/signin?callbackUrl=/wallet/fund");
     }
+    setSaving(false);
   };
 
   const handleGoogleSignIn = async () => {

@@ -1,45 +1,39 @@
+import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
-import { getToken } from "next-auth/jwt";
 
-const PUBLIC_ROUTES = ["/", "/onboarding", "/api/auth"];
+export default withAuth(
+  function middleware(req) {
+    const { pathname } = req.nextUrl;
+    const token = req.nextauth.token;
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+    // Unauthenticated users can only access landing, onboarding, auth pages
+    const publicPaths = ["/", "/onboarding", "/auth/signin", "/auth/error", "/stadium"];
+    const isPublic    = publicPaths.some((p) => pathname.startsWith(p));
 
-  // Allow public routes and API routes through
-  if (PUBLIC_ROUTES.some((r) => pathname === r || pathname.startsWith(r))) {
+    if (!token && !isPublic) {
+      return NextResponse.redirect(new URL("/auth/signin", req.url));
+    }
+
+    // Authenticated users without a gateway balance: redirect to fund wallet
+    // (except if they're already on the fund page or auth pages)
+    if (token &&
+        !pathname.startsWith("/wallet") &&
+        !pathname.startsWith("/auth") &&
+        !pathname.startsWith("/api") &&
+        pathname.startsWith("/watch") &&
+        (token.gateway_balance as number ?? 0) <= 0) {
+      return NextResponse.redirect(new URL("/wallet/fund", req.url));
+    }
+
     return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: () => true, // handle redirects manually above
+    },
   }
-
-  const token = await getToken({ req: request });
-
-  // 1. Check country selection cookie (must have selected team to view stadium/watch)
-  const selectedTeam = request.cookies.get("roar_selected_team");
-  if (!selectedTeam) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
-  }
-
-  // 2. Allow public feed and watch pages without auth
-  if (pathname.startsWith("/stadium") || pathname.startsWith("/watch")) {
-    return NextResponse.next();
-  }
-
-  // 3. Protected pages (like /upload, /passport) require login
-  if (!token) {
-    return NextResponse.redirect(new URL("/", request.url));
-  }
-
-  return NextResponse.next();
-}
+);
 
 export const config = {
-  matcher: [
-    "/stadium/:path*",
-    "/watch/:path*",
-    "/upload/:path*",
-    "/passport/:path*",
-    "/earnings/:path*",
-    "/leaderboards/:path*",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon|public|api/auth).*)"],
 };

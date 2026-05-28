@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
@@ -9,7 +10,6 @@ import { useEffect, useState } from "react";
 import { xLayerPublicClient } from "@/lib/xlayer/client";
 import { formatEther } from "viem";
 
-import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
 import { useWalletBalance } from "@/hooks/useWalletBalance";
 
 const links = [
@@ -37,7 +37,14 @@ export function Navbar() {
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link href="/stadium" className="flex items-center gap-2">
-          <RoarTubeLogo />
+          <Image
+            src="/logo.png"
+            alt="RoarTube"
+            width={140}
+            height={40}
+            priority
+            className="h-10 w-auto object-contain"
+          />
         </Link>
 
         {/* Nav Links */}
