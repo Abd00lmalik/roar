@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Link from "next/link";
 import { getSupabaseClient } from "@/lib/supabase/singleton";
 
 export default function AdminPage() {
@@ -77,17 +78,25 @@ export default function AdminPage() {
     <div className="mx-auto w-full max-w-6xl space-y-4 px-4 py-6">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <h1 className="font-display text-4xl font-bold">RoarTube Admin Panel</h1>
-        <button
-          onClick={() => {
-            if (confirm("Are you sure you want to delete all demo videos? This cannot be undone.")) {
-              nukeMutation.mutate();
-            }
-          }}
-          disabled={nukeMutation.isPending}
-          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-sm transition-all cursor-pointer"
-        >
-          {nukeMutation.isPending ? "Deleting Demo Videos..." : "Delete All Demo Videos"}
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/system/env"
+            className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg text-sm transition-all cursor-pointer"
+          >
+            Env Health
+          </Link>
+          <button
+            onClick={() => {
+              if (confirm("Are you sure you want to delete all demo videos? This cannot be undone.")) {
+                nukeMutation.mutate();
+              }
+            }}
+            disabled={nukeMutation.isPending}
+            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg text-sm transition-all cursor-pointer"
+          >
+            {nukeMutation.isPending ? "Deleting Demo Videos..." : "Delete All Demo Videos"}
+          </button>
+        </div>
       </div>
       <section className="glass-panel grid gap-2 p-4 text-sm md:grid-cols-2">
         <p>Total Watch Seconds: {Number(totalWatchSeconds).toLocaleString()}</p>
