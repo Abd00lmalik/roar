@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { RoarTubeLogo } from "@/components/ui/RoarTubeLogo";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useAccount, useBalance } from "wagmi";
 import { useSession } from "next-auth/react";
@@ -24,6 +24,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { address: connectedAddress, isConnected } = useAccount();
   const { data: session } = useSession();
+  const [walletErrorDismissed, setWalletErrorDismissed] = useState(false);
 
   const { balance: circleUsdcBalance } = useWalletBalance(session?.user?.circleWalletId ?? null);
 
@@ -37,14 +38,7 @@ export function Navbar() {
       <div className="mx-auto flex w-full max-w-7xl items-center justify-between">
         {/* Logo */}
         <Link href="/stadium" className="flex items-center gap-2">
-          <Image
-            src="/logo.png"
-            alt="RoarTube"
-            width={140}
-            height={40}
-            priority
-            className="h-10 w-auto object-contain"
-          />
+          <RoarTubeLogo />
         </Link>
 
         {/* Nav Links */}
@@ -84,10 +78,14 @@ export function Navbar() {
               )}
             </div>
           )}
-          {session?.user && !session.user.walletAddress && (
-            <div className="hidden sm:flex flex-col items-end px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-xl text-[11px] font-medium leading-tight text-red-400">
-              <span className="font-bold">Wallet Error</span>
-              <span className="text-white/60 font-mono text-[9px] mt-0.5">Check console logs</span>
+          {session?.user && !session.user.walletAddress && !walletErrorDismissed && (
+            <div
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs cursor-pointer animate-pulse"
+              onClick={() => setWalletErrorDismissed(true)}
+              title="Circle wallet not configured — check Vercel env vars"
+            >
+              ⚠️ Wallet not ready
+              <span className="text-amber-400/50 text-[10px]">✕</span>
             </div>
           )}
           <ConnectButton chainStatus="icon" showBalance={false} />

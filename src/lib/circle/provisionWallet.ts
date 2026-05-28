@@ -7,6 +7,16 @@ export async function provisionCircleWallet(userId: string): Promise<{
   walletId:      string;
   walletAddress: string;
 }> {
+  const apiKey       = process.env.CIRCLE_API_KEY;
+  const entitySecret = process.env.CIRCLE_ENTITY_SECRET;
+  const walletSetId  = process.env.CIRCLE_WALLET_SET_ID;
+
+  if (!apiKey || !entitySecret || !walletSetId) {
+    throw new Error(
+      "Circle SDK not configured. Set CIRCLE_API_KEY, CIRCLE_ENTITY_SECRET, CIRCLE_WALLET_SET_ID in Vercel environment variables."
+    );
+  }
+
   const client = getCircleClient();
 
   // IDEMPOTENCY CHECK — mirror Streamarc exactly

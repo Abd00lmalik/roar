@@ -29,8 +29,8 @@ export const metadata: Metadata = {
   title: "RoarTube",
   description: "Where football attention becomes creator revenue.",
   icons: {
-    icon: "/logo.png",
-    apple: "/logo.png",
+    icon: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 

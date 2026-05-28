@@ -15,6 +15,11 @@ const supabaseAdmin = createClient(
 );
 
 async function getOrCreateProfile(userId: string, email: string, name?: string, image?: string) {
+  console.log("[auth:signIn] Starting profile setup for:", email);
+  console.log("[auth:signIn] CIRCLE_API_KEY set:", !!process.env.CIRCLE_API_KEY);
+  console.log("[auth:signIn] CIRCLE_ENTITY_SECRET set:", !!process.env.CIRCLE_ENTITY_SECRET);
+  console.log("[auth:signIn] CIRCLE_WALLET_SET_ID set:", !!process.env.CIRCLE_WALLET_SET_ID);
+
   // Check existing profile
   const { data: existing } = await supabaseAdmin
     .from("profiles")
@@ -22,22 +27,32 @@ async function getOrCreateProfile(userId: string, email: string, name?: string, 
     .eq("id", userId)
     .maybeSingle();
 
-  if (existing?.circle_wallet_id) return existing;
+  if (existing?.circle_wallet_id) {
+    console.log("[auth:signIn] Profile and Circle Wallet already exist for:", email);
+    return existing;
+  }
 
   // Provision Circle wallet
   let walletId      = "";
   let walletAddress = "";
 
-  try {
-    const wallet  = await provisionCircleWallet(userId);
-    walletId      = wallet.walletId;
-    walletAddress = wallet.walletAddress;
-  } catch (err) {
-    console.error("[auth] Circle wallet provision failed:", err);
-    // Continue — user can still sign in, wallet provisioned on next attempt
+  if (!process.env.CIRCLE_API_KEY || !process.env.CIRCLE_ENTITY_SECRET || !process.env.CIRCLE_WALLET_SET_ID) {
+    console.error("[auth:signIn] MISSING CIRCLE ENV VARS — wallet creation skipped");
+  } else {
+    try {
+      console.log("[auth:signIn] Provisioning Circle wallet...");
+      const wallet  = await provisionCircleWallet(userId);
+      walletId      = wallet.walletId;
+      walletAddress = wallet.walletAddress;
+      console.log("[auth:signIn] Wallet provisioned successfully:", walletAddress);
+    } catch (err) {
+      console.error("[auth:signIn] Circle wallet provision failed:", err);
+      // Continue — user can still sign in, wallet provisioned on next attempt
+    }
   }
 
   // Upsert profile
+  console.log("[auth:signIn] Upserting profile for:", email);
   const handle = `${(email.split("@")[0]).replace(/[^a-z0-9]/gi, "").toLowerCase()}${Math.random().toString(36).slice(2, 6)}`;
 
   const { data: profile } = await supabaseAdmin
@@ -57,11 +72,16 @@ async function getOrCreateProfile(userId: string, email: string, name?: string, 
     .select()
     .single();
 
+  console.log("[auth:signIn] Profile upserted successfully");
+
   // Mint X Layer Fan Passport (non-blocking — never fails sign in)
   if (walletAddress) {
     const supporterNation = "TBD"; // updated after onboarding
-    mintFanPassport(walletAddress, supporterNation).catch((err) => {
-      console.error("[auth] X Layer passport mint failed (non-blocking):", err);
+    console.log("[auth:signIn] Initiating passport mint for:", walletAddress);
+    mintFanPassport(walletAddress, supporterNation).then(() => {
+      console.log("[auth:signIn] X Layer passport minted successfully");
+    }).catch((err) => {
+      console.error("[auth:signIn] X Layer passport mint failed (non-blocking):", err);
     });
   }
 

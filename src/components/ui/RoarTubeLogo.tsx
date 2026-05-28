@@ -1,25 +1,55 @@
-"use client";
+// src/components/ui/RoarTubeLogo.tsx
+import React from "react";
 
 interface RoarTubeLogoProps {
-  className?: string;
-  /** Override height/size in pixels (default: 40) */
   height?: number;
+  width?: number;
+  className?: string;
 }
 
-export function RoarTubeLogo({ className = "", height = 40 }: RoarTubeLogoProps) {
-  const fontSize = `${height * 0.65}px`;
+export function RoarTubeLogo({ height = 40, width, className }: RoarTubeLogoProps) {
+  const calculatedWidth = width ?? (height * 3.5);
 
   return (
-    <span
-      className={`font-black italic tracking-tight font-display select-none ${className}`}
-      style={{
-        fontSize,
-        lineHeight: "1",
-        color: "var(--country-accent, #FFCE00)",
-        textShadow: "0 4px 12px rgba(0, 0, 0, 0.4)",
-      }}
+    <svg
+      width={calculatedWidth}
+      height={height}
+      viewBox="0 0 140 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
     >
-      Roar<span className="text-white">Tube</span>
-    </span>
+      {/* Football circle mark */}
+      <circle cx="20" cy="20" r="16" fill="#111111" stroke="#FFCE00" strokeWidth="1.5"/>
+      <polygon
+        points="20,8 22.8,14 29,14 24,18 26,25 20,21 14,25 16,18 11,14 17.2,14"
+        fill="#FFCE00"
+      />
+      {/* Wordmark */}
+      <text
+        x="44"
+        y="27"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontWeight="900"
+        fontStyle="italic"
+        fontSize="22"
+        fill="#FFCE00"
+        letterSpacing="-0.5"
+      >
+        Roar
+      </text>
+      <text
+        x="91"
+        y="27"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        fontWeight="900"
+        fontStyle="italic"
+        fontSize="22"
+        fill="#FFFFFF"
+        letterSpacing="-0.5"
+      >
+        Tube
+      </text>
+    </svg>
   );
 }

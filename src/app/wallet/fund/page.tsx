@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useState }   from "react";
 import { useAccount, useWriteContract } from "wagmi";
 import { parseUnits } from "viem";
+import { useRouter }   from "next/navigation";
 
 const erc20Abi = [
   {
@@ -19,13 +20,27 @@ const erc20Abi = [
 ] as const;
 
 export default function FundWalletPage() {
-  const { data: session, update: updateSession } = useSession();
+  const router = useRouter();
+  const { data: session, status, update: updateSession } = useSession();
   const { address: web3Address, isConnected } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const [amount,  setAmount]  = useState("");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error,   setError]   = useState("");
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen bg-[#060810] flex items-center justify-center text-white/50 text-sm">
+        Loading...
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    router.push("/auth/signin?callbackUrl=/wallet/fund");
+    return null;
+  }
 
   const isWeb3User   = isConnected && !!web3Address;
   const walletAddr   = session?.user?.wallet_address ?? web3Address ?? "";
