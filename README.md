@@ -1,9 +1,9 @@
-# Roarball
+# RoarTube
 Live url:https://roartube.vercel.app
 
 **Where football attention becomes creator revenue and fan rewards on OKX X Layer.**
 
-Roarball is a World Cup themed, pay-per-second football video platform designed to build an open media infrastructure. It eliminates traditional video ads completely, replacing them with a high velocity micro billing streaming highway. Fans pay fractions of a cent only for the exact seconds they actively watch, content creators get paid directly and instantly and viewers are financially rewarded for participating in the digital stadium ecosystem.
+RoarTube is a World Cup themed, pay-per-second football video platform designed to build an open media infrastructure. It eliminates traditional video ads completely, replacing them with a high velocity micro billing streaming highway. Fans pay fractions of a cent only for the exact seconds they actively watch, content creators get paid directly and instantly and viewers are financially rewarded for participating in the digital stadium ecosystem.
 
 ---
 
