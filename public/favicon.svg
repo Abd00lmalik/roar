@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <circle cx="16" cy="16" r="16" fill="#111111"/>
+  <!-- Football pentagon pattern -->
+  <circle cx="16" cy="16" r="11" fill="none" stroke="#FFCE00" stroke-width="1.5"/>
+  <polygon points="16,7 18.5,12 23.5,12 19.5,15.5 21,21 16,18 11,21 12.5,15.5 8.5,12 13.5,12"
+    fill="#FFCE00" stroke="#111111" stroke-width="0.5"/>
+</svg>

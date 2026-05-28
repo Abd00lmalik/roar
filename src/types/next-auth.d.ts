@@ -21,6 +21,8 @@ declare module "next-auth" {
       walletAddress: string | null;
       circleWalletId: string | null;
       displayName: string | null;
+      circleWalletAddress?: string | null;
+      supporterNation?: string | null;
       // Standard fields
       name?: string | null;
       email?: string | null;
@@ -36,5 +38,7 @@ declare module "next-auth/jwt" {
     walletAddress?: string | null;
     circleWalletId?: string | null;
     displayName?: string | null;
+    circleWalletAddress?: string | null;
+    supporterNation?: string | null;
   }
 }
