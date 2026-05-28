@@ -18,6 +18,7 @@ function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [envMissing, setEnvMissing] = useState<string[]>([]);
 
   const { connectors, connect } = useConnect();
   const { isConnected } = useAccount();
@@ -33,6 +34,17 @@ function SignInForm() {
       router.replace("/wallet/fund");
     }
   }, [isConnected, status, router]);
+
+  useEffect(() => {
+    void fetch("/api/env/check")
+      .then((res) => res.json())
+      .then((payload: { missing?: string[] }) => {
+        setEnvMissing(Array.isArray(payload.missing) ? payload.missing : []);
+      })
+      .catch(() => {
+        setEnvMissing([]);
+      });
+  }, []);
 
   const handleGoogle = () => {
     void signIn("google", { callbackUrl });
@@ -104,6 +116,12 @@ function SignInForm() {
           <h1 className="text-xl font-bold text-white">Welcome to RoarTube</h1>
           <p className="text-sm text-white/40">Sign in to access your stadium</p>
         </div>
+
+        {envMissing.length > 0 ? (
+          <div className="rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs text-amber-300">
+            Missing environment config: {envMissing.join(", ")}
+          </div>
+        ) : null}
 
         <button
           onClick={handleGoogle}

@@ -50,7 +50,7 @@ export default function OnboardingPage() {
   /* Auto-advance to /stadium once wallet connected on auth step */
   useEffect(() => {
     if (step === "auth" && isConnected) {
-      router.push("/stadium");
+      router.push("/wallet/fund");
     }
   }, [step, isConnected, router]);
 
@@ -102,7 +102,7 @@ export default function OnboardingPage() {
 
   const handleGoogleSignIn = async () => {
     setSigningIn(true);
-    await signIn("google", { callbackUrl: "/stadium" });
+    await signIn("google", { callbackUrl: "/wallet/fund" });
   };
 
   const handleWalletConnect = () => {
@@ -112,6 +112,8 @@ export default function OnboardingPage() {
   const handleSkip = () => {
     router.push("/stadium");
   };
+
+  const faucetUrl = process.env.NEXT_PUBLIC_USDC_FAUCET_URL ?? "https://faucet.circle.com";
 
   const displayTeams = COUNTRIES.filter(
     (c) => !c.code.startsWith("TBD") && c.confederation !== "PLAYOFF"
@@ -184,6 +186,13 @@ export default function OnboardingPage() {
               <GoogleIcon />
               {signingIn ? "Redirecting to Google…" : "Continue with Google"}
             </button>
+            <button
+              id="btn-email-signin"
+              onClick={() => router.push("/auth/signin?callbackUrl=/wallet/fund")}
+              className="w-full rounded-2xl border border-white/20 bg-white/[0.04] py-4 px-6 text-sm font-bold text-white transition-all duration-200 hover:bg-white/10 hover:scale-[1.02] active:scale-100"
+            >
+              Continue with Email / Password
+            </button>
 
             {/* Wallet */}
             <button
@@ -197,6 +206,15 @@ export default function OnboardingPage() {
               <span className="text-lg">🔗</span>
               Connect Crypto Wallet
             </button>
+            <a
+              id="btn-faucet-link"
+              href={faucetUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="block w-full rounded-2xl border border-white/15 bg-white/[0.02] py-3 text-sm font-medium text-white/80 hover:bg-white/10"
+            >
+              Open USDC Faucet
+            </a>
 
             {/* Skip */}
             <button
