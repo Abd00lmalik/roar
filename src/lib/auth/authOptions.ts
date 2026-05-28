@@ -32,7 +32,7 @@ export const authOptions: AuthOptions = {
         // STEP 1: Check if profile already exists (idempotency)
         const { data: profile } = await supabase
           .from("profiles")
-          .select("id, circle_wallet_id, wallet_address, country_code, confederation, handle, country_name")
+          .select("id, circle_wallet_id, wallet_address, country_code, confederation, handle, country_name, cumulative_free_seconds_used")
           .eq("email", user.email)
           .maybeSingle();
 
